@@ -12,7 +12,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(to bottom right, #9ca3af, #6b7280, #4b5563);
+  background: linear-gradient(to bottom right, #1a237e, #283593, #303f9f);
   padding: 3rem;
   color: white;
 }
@@ -86,15 +86,15 @@
 }
 
 .form-title {
-  font-size: 2.75rem;
-  font-weight: 800;
+  font-size: 2.5rem;
+  font-weight: 700;
   letter-spacing: -0.025em;
   margin-bottom: 0;
-  color: #111827;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #303030;
+  background: none;
+  -webkit-background-clip: unset;
+  -webkit-text-fill-color: unset;
+  background-clip: unset;
 }
 
 .login-form {
@@ -128,7 +128,7 @@
 }
 
 .form-input:focus {
-  border-color: #6366f1;
+  border-color: #326ce5;
 }
 
 .password-wrapper {
@@ -191,7 +191,7 @@
   cursor: pointer;
   overflow: hidden;
   transition: all 0.3s;
-  background: #111827;
+  background: #326ce5;
   color: white;
   border: none;
 }

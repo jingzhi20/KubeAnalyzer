@@ -132,19 +132,12 @@ function K8sGPTPage() {
 
   return (
     <div>
-      <div style={styles.header}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <h1 style={styles.title}>分析参数</h1>
-          <span style={{ fontSize: '13px', color: '#999', marginTop: '4px' }}>资源过滤器（可多选，不选则分析默认资源）</span>
-        </div>
-      </div>
-
       <div style={styles.analyzeSection}>
         <div style={styles.filtersWrap}>
           {/* 网络诊断 - 快速排查，置顶 */}
           {filters.some(f => networkDiagFilters.includes(f)) && (
-            <>
-              <div style={styles.sectionLabel}>🌐 网络诊断（快速排查）</div>
+            <div style={styles.filterGroup}>
+              <span style={styles.sectionLabel}>🌐 网络诊断</span>
               <div style={styles.filterChips}>
                 {filters.filter(f => networkDiagFilters.includes(f)).map(f => (
                   <button key={f}
@@ -159,12 +152,12 @@ function K8sGPTPage() {
                   </button>
                 ))}
               </div>
-            </>
+            </div>
           )}
           {/* 诊断分析 - 核心诊断能力 */}
           {filters.some(f => diagnosticFilters.includes(f)) && (
-            <>
-              <div style={{ ...styles.sectionLabel, marginTop: filters.some(f => networkDiagFilters.includes(f)) ? '16px' : 0 }}>🔍 诊断分析（核心能力）</div>
+            <div style={styles.filterGroup}>
+              <span style={styles.sectionLabel}>🔍 诊断分析</span>
               <div style={styles.filterChips}>
                 {filters.filter(f => diagnosticFilters.includes(f)).map(f => (
                   <button key={f}
@@ -179,12 +172,12 @@ function K8sGPTPage() {
                   </button>
                 ))}
               </div>
-            </>
+            </div>
           )}
           {/* Traefik CRD 资源 */}
           {filters.some(f => traefikFilters.includes(f) && !hiddenFilters.includes(f)) && (
-            <>
-              <div style={{ ...styles.sectionLabel, marginTop: '16px' }}>🔀 Traefik CRD 资源</div>
+            <div style={styles.filterGroup}>
+              <span style={styles.sectionLabel}>🔀 Traefik CRD</span>
               <div style={styles.filterChips}>
                 {filters.filter(f => traefikFilters.includes(f) && !hiddenFilters.includes(f)).map(f => (
                   <button key={f}
@@ -199,23 +192,25 @@ function K8sGPTPage() {
                   </button>
                 ))}
               </div>
-            </>
+            </div>
           )}
           {/* Kubernetes 核心资源 */}
-          <div style={{ ...styles.sectionLabel, marginTop: '16px' }}>☸ Kubernetes 核心资源</div>
-          <div style={styles.filterChips}>
-            {filters.filter(f => !specialFilters.includes(f) && !hiddenFilters.includes(f)).map(f => (
-              <button key={f}
-                style={{
-                  ...styles.diagChip,
-                  background: selectedFilters.includes(f) ? '#1976d2' : '#e3f2fd',
-                  color: selectedFilters.includes(f) ? 'white' : '#1565c0',
-                  border: selectedFilters.includes(f) ? 'none' : '1px solid #90caf9',
-                }}
-                onClick={() => toggleFilter(f)}>
-                {f}
-              </button>
-            ))}
+          <div style={styles.filterGroup}>
+            <span style={styles.sectionLabel}>☸ K8s 核心资源</span>
+            <div style={styles.filterChips}>
+              {filters.filter(f => !specialFilters.includes(f) && !hiddenFilters.includes(f)).map(f => (
+                <button key={f}
+                  style={{
+                    ...styles.diagChip,
+                    background: selectedFilters.includes(f) ? '#1976d2' : '#e3f2fd',
+                    color: selectedFilters.includes(f) ? 'white' : '#1565c0',
+                    border: selectedFilters.includes(f) ? 'none' : '1px solid #90caf9',
+                  }}
+                  onClick={() => toggleFilter(f)}>
+                  {f}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
         {/* 操作栏 */}
@@ -361,10 +356,9 @@ function K8sGPTPage() {
         </div>
       )}
 
-      {!analyzing && results.length === 0 && !rawJSON && (
-        <div style={styles.emptyState}>
-          <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔍</div>
-          <p>选择过滤器和参数，点击 "开始分析" 对集群进行智能诊断</p>
+      {analyzing && (
+        <div style={{ textAlign: 'center', padding: '24px', color: 'var(--k8s-text-muted)', fontSize: '13px' }}>
+          ⏳ 分析中，请稍候...
         </div>
       )}
     </div>
@@ -372,42 +366,38 @@ function K8sGPTPage() {
 }
 
 const styles: { [key: string]: React.CSSProperties } = {
-  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' },
-  title: { fontSize: '22px', color: '#333', margin: 0 },
-  analyzeSection: { background: 'white', padding: '24px', borderRadius: '10px', marginBottom: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' },
-  filtersWrap: { marginBottom: '8px' },
-  filterChips: { display: 'flex', flexWrap: 'wrap' as const, gap: '8px', marginTop: '8px' },
-  chip: { padding: '6px 14px', borderRadius: '16px', border: 'none', cursor: 'pointer', fontSize: '13px', transition: 'all 0.2s' },
-  sectionLabel: { marginBottom: '8px', fontSize: '13px', color: '#1976d2', fontWeight: 600 },
-  diagChip: { padding: '6px 14px', borderRadius: '16px', cursor: 'pointer', fontSize: '13px', transition: 'all 0.2s', fontWeight: 500 },
-  // Toolbar - dark geek style
-  toolbar: { marginTop: '20px', background: '#0d1117', borderRadius: '10px', padding: '16px', display: 'flex', flexDirection: 'column' as const, gap: '12px' },
-  toolbarRow: { display: 'flex', alignItems: 'flex-end', gap: '12px', flexWrap: 'wrap' as const },
-  toolbarRow2: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' as const, borderTop: '1px solid #21262d', paddingTop: '12px' },
-  fieldGroup: { display: 'flex', flexDirection: 'column' as const, gap: '4px' },
-  fieldLabel: { fontSize: '11px', color: '#8b949e', fontWeight: 500, letterSpacing: '0.5px', textTransform: 'uppercase' as const },
-  separator: { color: '#30363d', fontSize: '20px', marginBottom: '6px', userSelect: 'none' as const },
-  toolbarSelect: { padding: '8px 12px', background: '#161b22', border: '1px solid #30363d', borderRadius: '6px', color: '#c9d1d9', fontSize: '13px', cursor: 'pointer', outline: 'none', minWidth: '140px' },
-  toolbarInput: { padding: '8px 12px', background: '#161b22', border: '1px solid #30363d', borderRadius: '6px', color: '#c9d1d9', fontSize: '13px', outline: 'none', width: '100%', boxSizing: 'border-box' as const },
-  iconBtn: { padding: '6px 8px', background: '#161b22', border: '1px solid #30363d', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', lineHeight: 1 },
-  toggleGroup: { display: 'flex', gap: '6px', flexWrap: 'wrap' as const },
-  toggleBtn: { padding: '6px 12px', background: '#161b22', border: '1px solid #30363d', borderRadius: '6px', color: '#8b949e', fontSize: '12px', cursor: 'pointer', transition: 'all 0.2s', fontWeight: 500 },
+  analyzeSection: { background: 'var(--k8s-card-bg)', padding: '20px', borderRadius: 'var(--k8s-card-radius)', border: '1px solid var(--k8s-border)' },
+  filtersWrap: { display: 'flex', flexDirection: 'column' as const, gap: '14px' },
+  filterGroup: { display: 'flex', flexDirection: 'column' as const, gap: '6px' },
+  filterChips: { display: 'flex', flexWrap: 'wrap' as const, gap: '6px' },
+  sectionLabel: { fontSize: '12px', color: 'var(--k8s-blue)', fontWeight: 600 },
+  diagChip: { padding: '5px 12px', borderRadius: '3px', cursor: 'pointer', fontSize: '12px', transition: 'all 0.15s', fontWeight: 500 },
+  toolbar: { marginTop: '14px', background: '#0d1117', borderRadius: '6px', padding: '14px', display: 'flex', flexDirection: 'column' as const, gap: '10px' },
+  toolbarRow: { display: 'flex', alignItems: 'flex-end', gap: '10px', flexWrap: 'wrap' as const },
+  toolbarRow2: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap' as const, borderTop: '1px solid #21262d', paddingTop: '10px' },
+  fieldGroup: { display: 'flex', flexDirection: 'column' as const, gap: '3px' },
+  fieldLabel: { fontSize: '10px', color: '#8b949e', fontWeight: 500, letterSpacing: '0.5px', textTransform: 'uppercase' as const },
+  separator: { color: '#30363d', fontSize: '18px', marginBottom: '4px', userSelect: 'none' as const },
+  toolbarSelect: { padding: '6px 10px', background: '#161b22', border: '1px solid #30363d', borderRadius: '4px', color: '#c9d1d9', fontSize: '12px', cursor: 'pointer', outline: 'none', minWidth: '130px' },
+  toolbarInput: { padding: '6px 10px', background: '#161b22', border: '1px solid #30363d', borderRadius: '4px', color: '#c9d1d9', fontSize: '12px', outline: 'none', width: '100%', boxSizing: 'border-box' as const },
+  iconBtn: { padding: '5px 7px', background: '#161b22', border: '1px solid #30363d', borderRadius: '4px', cursor: 'pointer', fontSize: '13px', lineHeight: 1 },
+  toggleGroup: { display: 'flex', gap: '4px', flexWrap: 'wrap' as const },
+  toggleBtn: { padding: '5px 10px', background: '#161b22', border: '1px solid #30363d', borderRadius: '4px', color: '#8b949e', fontSize: '11px', cursor: 'pointer', transition: 'all 0.15s', fontWeight: 500 },
   toggleActive: { background: '#1f6feb', borderColor: '#1f6feb', color: '#fff' },
-  analyzeBtn2: { padding: '10px 24px', background: 'linear-gradient(135deg, #238636, #2ea043)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 600, letterSpacing: '0.5px', whiteSpace: 'nowrap' as const, cursor: 'pointer' },
-  resultSection: { background: 'white', padding: '24px', borderRadius: '10px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' },
-  problemBadge: { fontSize: '14px', color: '#f44336', fontWeight: 'normal' },
-  resultList: { display: 'grid', gap: '16px' },
-  resultCard: { border: '1px solid #eee', borderRadius: '8px', padding: '16px' },
-  resultHeader: { display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' },
-  kindBadge: { padding: '4px 12px', background: '#e3f2fd', color: '#1976d2', borderRadius: '12px', fontSize: '12px', fontWeight: '600' },
-  resultName: { fontSize: '15px', fontWeight: '500', color: '#333' },
-  errorSection: { background: '#fff3f3', padding: '12px', borderRadius: '6px', marginBottom: '12px', fontSize: '14px' },
-  errorItem: { color: '#d32f2f', marginTop: '4px' },
-  detailsSection: { background: '#f8f9fa', padding: '12px', borderRadius: '6px', marginBottom: '12px', fontSize: '14px', lineHeight: '1.6' },
-  parentObj: { fontSize: '13px', color: '#888' },
-  rawSection: { fontSize: '14px' },
-  rawPre: { background: '#f5f5f5', padding: '16px', borderRadius: '6px', overflow: 'auto', fontSize: '13px', maxHeight: '400px' },
-  emptyState: { textAlign: 'center' as const, padding: '60px', color: '#999', background: 'white', borderRadius: '10px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' },
+  analyzeBtn2: { padding: '8px 20px', background: 'linear-gradient(135deg, #238636, #2ea043)', color: 'white', border: 'none', borderRadius: '4px', fontSize: '13px', fontWeight: 600, letterSpacing: '0.3px', whiteSpace: 'nowrap' as const, cursor: 'pointer' },
+  resultSection: { background: 'var(--k8s-card-bg)', padding: '20px', borderRadius: 'var(--k8s-card-radius)', border: '1px solid var(--k8s-border)', marginTop: '16px' },
+  problemBadge: { fontSize: '13px', color: 'var(--k8s-danger)', fontWeight: 'normal' },
+  resultList: { display: 'grid', gap: '12px' },
+  resultCard: { border: '1px solid var(--k8s-border-light)', borderRadius: '4px', padding: '14px' },
+  resultHeader: { display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' },
+  kindBadge: { padding: '2px 10px', background: 'var(--k8s-blue-light)', color: 'var(--k8s-blue)', borderRadius: '3px', fontSize: '11px', fontWeight: 600 },
+  resultName: { fontSize: '14px', fontWeight: 500, color: 'var(--k8s-text-primary)' },
+  errorSection: { background: '#ffebee', padding: '10px 14px', borderRadius: '4px', marginBottom: '10px', fontSize: '13px' },
+  errorItem: { color: 'var(--k8s-danger)', marginTop: '3px' },
+  detailsSection: { background: '#f8f9fa', padding: '10px 14px', borderRadius: '4px', marginBottom: '10px', fontSize: '13px', lineHeight: '1.7' },
+  parentObj: { fontSize: '12px', color: 'var(--k8s-text-muted)' },
+  rawSection: { fontSize: '13px' },
+  rawPre: { background: '#f5f5f5', padding: '14px', borderRadius: '4px', overflow: 'auto', fontSize: '12px', maxHeight: '400px' },
 };
 
 export default K8sGPTPage;

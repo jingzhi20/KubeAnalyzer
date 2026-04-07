@@ -56,7 +56,6 @@ function Layout() {
     { path: '/app/users', label: '用户管理', icon: '👥', adminOnly: true },
   ];
 
-  // Filter menu items based on user role
   const filteredMenuItems = menuItems.filter(item => {
     if (item.adminOnly && currentUser?.role !== 'admin') {
       return false;
@@ -64,21 +63,38 @@ function Layout() {
     return true;
   });
 
+  const isActive = (item: typeof menuItems[0]) =>
+    item.path === '/app' ? location.pathname === '/app' : location.pathname.startsWith(item.path);
+
   return (
     <div style={styles.container}>
-      <aside style={{ ...styles.sidebar, width: collapsed ? '60px' : '240px' }}>
+      <aside style={{ ...styles.sidebar, width: collapsed ? '56px' : '220px' }}>
+        {/* Logo */}
         <div style={styles.logo}>
-          {!collapsed && <h2 style={{ margin: 0 }}>KubeAnalyzer</h2>}
-          <button style={styles.collapseBtn} onClick={() => setCollapsed(!collapsed)}>
-            {collapsed ? '→' : '←'}
+          {!collapsed && (
+            <div style={styles.logoInner}>
+              <span style={styles.logoIcon}>☸</span>
+              <span style={styles.logoText}>KubeAnalyzer</span>
+            </div>
+          )}
+          <button
+            style={styles.collapseBtn}
+            onClick={() => setCollapsed(!collapsed)}
+            aria-label={collapsed ? '展开侧边栏' : '收起侧边栏'}
+          >
+            {collapsed ? '›' : '‹'}
           </button>
         </div>
+
+        {/* Cluster indicator */}
         {!collapsed && activeCluster && (
           <div style={styles.clusterIndicator}>
             <span style={styles.clusterDot} />
             <span style={styles.clusterName}>{activeCluster.name}</span>
           </div>
         )}
+
+        {/* Nav */}
         <nav style={styles.nav}>
           {filteredMenuItems.map(item => (
             <Link
@@ -86,14 +102,16 @@ function Layout() {
               to={item.path}
               style={{
                 ...styles.menuItem,
-                background: (item.path === '/app' ? location.pathname === '/app' : location.pathname.startsWith(item.path)) ? '#667eea' : 'transparent',
+                ...(isActive(item) ? styles.menuItemActive : {}),
               }}
             >
               <span style={styles.menuIcon}>{item.icon}</span>
-              {!collapsed && <span>{item.label}</span>}
+              {!collapsed && <span style={styles.menuLabel}>{item.label}</span>}
             </Link>
           ))}
         </nav>
+
+        {/* User section */}
         <div style={styles.userSection}>
           {!collapsed && currentUser && (
             <div style={{ position: 'relative' }}>
@@ -112,8 +130,8 @@ function Layout() {
                   <div style={styles.userName}>{currentUser.username}</div>
                 </div>
                 <span style={{
-                  fontSize: '18px',
-                  color: '#666',
+                  fontSize: '14px',
+                  color: '#999',
                   transition: 'transform 0.2s',
                   transform: showUserMenu ? 'rotate(180deg)' : 'rotate(0deg)',
                   lineHeight: 1,
@@ -125,7 +143,7 @@ function Layout() {
                     <div style={styles.dropdownRole}>管理员</div>
                   )}
                   <button style={styles.logoutBtn} onClick={handleLogout}>
-                    🚪 退出登录
+                    退出登录
                   </button>
                 </div>
               )}
@@ -144,155 +162,187 @@ const styles: { [key: string]: React.CSSProperties } = {
   container: {
     display: 'flex',
     minHeight: '100vh',
-    background: '#f5f7fa',
+    background: 'var(--k8s-bg)',
   },
   sidebar: {
-    background: '#fff',
-    borderRight: '1px solid #e8e8e8',
+    background: 'var(--k8s-sidebar-bg)',
     display: 'flex',
     flexDirection: 'column',
-    transition: 'width 0.3s',
+    transition: 'width 0.2s ease',
     overflow: 'hidden',
+    flexShrink: 0,
   },
   logo: {
-    padding: '20px',
-    borderBottom: '1px solid #e8e8e8',
+    padding: '16px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
+    borderBottom: '1px solid rgba(255,255,255,0.08)',
+    minHeight: '56px',
+  },
+  logoInner: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+  },
+  logoIcon: {
+    fontSize: '22px',
+    color: '#326ce5',
+  },
+  logoText: {
+    fontSize: '16px',
+    fontWeight: 600,
+    color: '#fff',
+    letterSpacing: '-0.3px',
+    whiteSpace: 'nowrap' as const,
   },
   collapseBtn: {
     background: 'none',
     border: 'none',
     cursor: 'pointer',
     fontSize: '18px',
-    padding: '5px',
-  },
-  nav: {
-    flex: 1,
-    padding: '10px 0',
+    padding: '4px 6px',
+    color: '#999',
+    borderRadius: '4px',
+    lineHeight: 1,
   },
   clusterIndicator: {
     display: 'flex',
     alignItems: 'center',
     gap: '8px',
-    padding: '10px 20px',
-    background: '#f0f4ff',
-    borderBottom: '1px solid #e8e8e8',
-    fontSize: '13px',
-    color: '#667eea',
+    padding: '8px 16px',
+    background: 'rgba(50,108,229,0.1)',
+    borderBottom: '1px solid rgba(255,255,255,0.05)',
+    fontSize: '12px',
+    color: '#7aafff',
   },
   clusterDot: {
-    width: '8px',
-    height: '8px',
+    width: '6px',
+    height: '6px',
     borderRadius: '50%',
     background: '#4caf50',
     display: 'inline-block',
+    flexShrink: 0,
   },
   clusterName: {
-    fontWeight: '500',
+    fontWeight: 500,
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap' as const,
   },
+  nav: {
+    flex: 1,
+    padding: '8px 0',
+    overflowY: 'auto',
+  },
   menuItem: {
     display: 'flex',
     alignItems: 'center',
-    gap: '12px',
-    padding: '12px 20px',
-    color: '#333',
+    gap: '10px',
+    padding: '9px 16px',
+    color: '#bbb',
     textDecoration: 'none',
-    transition: 'all 0.2s',
-    marginBottom: '4px',
+    transition: 'all 0.15s',
+    fontSize: '13px',
+    borderLeft: '3px solid transparent',
+    whiteSpace: 'nowrap' as const,
+  },
+  menuItemActive: {
+    color: '#fff',
+    background: 'rgba(50,108,229,0.2)',
+    borderLeftColor: '#326ce5',
   },
   menuIcon: {
-    fontSize: '20px',
+    fontSize: '16px',
+    width: '20px',
+    textAlign: 'center' as const,
+    flexShrink: 0,
+  },
+  menuLabel: {
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
   },
   userSection: {
-    padding: '20px',
-    borderTop: '1px solid #e8e8e8',
+    padding: '12px 16px',
+    borderTop: '1px solid rgba(255,255,255,0.08)',
   },
   userInfo: {
     display: 'flex',
     alignItems: 'center',
-    gap: '12px',
-    padding: '12px',
-    background: '#f5f7fa',
-    borderRadius: '8px',
+    gap: '10px',
+    padding: '8px 10px',
+    background: 'rgba(255,255,255,0.06)',
+    borderRadius: '6px',
     cursor: 'pointer',
-    transition: 'background 0.2s',
+    transition: 'background 0.15s',
   },
   avatar: {
-    width: '40px',
-    height: '40px',
+    width: '32px',
+    height: '32px',
     borderRadius: '50%',
     objectFit: 'cover' as const,
   },
   avatarPlaceholder: {
-    width: '40px',
-    height: '40px',
+    width: '32px',
+    height: '32px',
     borderRadius: '50%',
-    background: '#667eea',
+    background: '#326ce5',
     color: 'white',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    fontSize: '18px',
-    fontWeight: 'bold',
+    fontSize: '14px',
+    fontWeight: 600,
+    flexShrink: 0,
   },
   userDetails: {
     flex: 1,
     overflow: 'hidden',
   },
   userName: {
-    fontSize: '14px',
-    fontWeight: 'bold',
-    color: '#333',
+    fontSize: '13px',
+    fontWeight: 500,
+    color: '#ddd',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap' as const,
-  },
-  userRole: {
-    fontSize: '12px',
-    color: '#666',
-    marginTop: '2px',
   },
   logoutBtn: {
     width: '100%',
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
-    padding: '10px 12px',
+    gap: '6px',
+    padding: '8px 10px',
     background: 'none',
     border: 'none',
-    borderRadius: '6px',
+    borderRadius: '4px',
     cursor: 'pointer',
-    color: '#c33',
-    fontSize: '14px',
+    color: '#ef5350',
+    fontSize: '13px',
     transition: 'background 0.15s',
   },
   userDropdown: {
     marginTop: '6px',
-    background: '#fff',
-    borderRadius: '8px',
-    boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
-    border: '1px solid #e8e8e8',
-    padding: '6px',
+    background: '#2a2a2a',
+    borderRadius: '6px',
+    border: '1px solid rgba(255,255,255,0.1)',
+    padding: '4px',
     overflow: 'hidden',
   },
   dropdownRole: {
-    padding: '6px 12px',
-    fontSize: '12px',
-    color: '#667eea',
-    background: '#f0f4ff',
+    padding: '4px 10px',
+    fontSize: '11px',
+    color: '#7aafff',
+    background: 'rgba(50,108,229,0.15)',
     borderRadius: '4px',
     marginBottom: '4px',
     textAlign: 'center' as const,
   },
   main: {
     flex: 1,
-    padding: '24px',
+    padding: '24px 32px',
     overflow: 'auto',
+    maxHeight: '100vh',
   },
 };
 

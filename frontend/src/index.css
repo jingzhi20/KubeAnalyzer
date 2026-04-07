@@ -1,3 +1,28 @@
+/* ===== K8s-inspired Design Tokens ===== */
+:root {
+  --k8s-blue: #326ce5;
+  --k8s-blue-light: #e8f0fe;
+  --k8s-blue-hover: #2b5ccc;
+  --k8s-dark: #303030;
+  --k8s-sidebar-bg: #222;
+  --k8s-sidebar-hover: #333;
+  --k8s-sidebar-active: #326ce5;
+  --k8s-text-primary: #303030;
+  --k8s-text-secondary: #555;
+  --k8s-text-muted: #888;
+  --k8s-border: #e0e0e0;
+  --k8s-border-light: #eee;
+  --k8s-bg: #f7f7f7;
+  --k8s-card-bg: #fff;
+  --k8s-card-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  --k8s-card-radius: 6px;
+  --k8s-success: #2e7d32;
+  --k8s-warning: #e65100;
+  --k8s-danger: #c62828;
+  --k8s-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans SC', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  --k8s-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -5,19 +30,45 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family: var(--k8s-font);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--k8s-text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: #f5f7fa;
+  background: var(--k8s-bg);
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+code, pre {
+  font-family: var(--k8s-mono);
 }
 
 #root {
   min-height: 100vh;
+}
+
+/* ===== Global Component Styles ===== */
+a {
+  color: var(--k8s-blue);
+  text-decoration: none;
+}
+a:hover {
+  color: var(--k8s-blue-hover);
+  text-decoration: underline;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #aaa;
 }

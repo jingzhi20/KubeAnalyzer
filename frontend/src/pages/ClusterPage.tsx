@@ -265,7 +265,7 @@ function ClusterPage() {
           return (
             <div key={cluster.id} style={{
               ...styles.card,
-              borderLeft: cluster.is_active ? '4px solid #667eea' : '4px solid transparent',
+              borderLeft: cluster.is_active ? '3px solid var(--k8s-blue)' : '3px solid transparent',
             }}>
               <div style={styles.cardHeader}>
                 <h3 style={styles.cardTitle}>{cluster.name}</h3>
@@ -331,7 +331,7 @@ function ClusterPage() {
                   </button>
                 )}
                 {!cluster.is_active && (
-                  <button style={{ ...styles.actionBtn, color: '#667eea', borderColor: '#667eea' }}
+                  <button style={{ ...styles.actionBtn, color: 'var(--k8s-blue)', borderColor: 'var(--k8s-blue)' }}
                     onClick={() => handleSetActive(cluster.id)}>
                     设为活跃
                   </button>
@@ -352,32 +352,32 @@ function ClusterPage() {
 }
 
 const styles: { [key: string]: React.CSSProperties } = {
-  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' },
-  title: { fontSize: '28px', color: '#333', margin: 0 },
-  addBtn: { padding: '10px 20px', background: '#667eea', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '14px' },
-  form: { background: 'white', padding: '24px', borderRadius: '10px', marginBottom: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' },
-  formGrid: { display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px', marginBottom: '16px' },
-  input: { padding: '10px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '14px' },
-  textarea: { width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '13px', fontFamily: 'monospace', marginBottom: '16px', boxSizing: 'border-box' as const },
+  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' },
+  title: { fontSize: '20px', fontWeight: 600, color: 'var(--k8s-text-primary)', margin: 0 },
+  addBtn: { padding: '8px 16px', background: 'var(--k8s-blue)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '13px', fontWeight: 500 },
+  form: { background: 'var(--k8s-card-bg)', padding: '20px', borderRadius: 'var(--k8s-card-radius)', marginBottom: '20px', border: '1px solid var(--k8s-border)' },
+  formGrid: { display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '14px' },
+  input: { padding: '8px 10px', border: '1px solid var(--k8s-border)', borderRadius: '4px', fontSize: '13px', outline: 'none' },
+  textarea: { width: '100%', padding: '8px 10px', border: '1px solid var(--k8s-border)', borderRadius: '4px', fontSize: '12px', fontFamily: 'var(--k8s-mono)', marginBottom: '14px', boxSizing: 'border-box' as const },
   fileUpload: { display: 'flex', alignItems: 'center' },
-  fileLabel: { padding: '10px 16px', background: '#f5f5f5', border: '1px dashed #ccc', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', color: '#666' },
-  submitBtn: { width: '100%', padding: '12px', background: '#667eea', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '14px' },
-  modeBtn: { flex: 1, padding: '12px 16px', border: '2px solid #ddd', borderRadius: '8px', cursor: 'pointer', textAlign: 'center' as const, fontSize: '14px', fontWeight: '500', transition: 'all 0.2s' },
-  modeBtnActive: { borderColor: '#667eea', background: '#f0f2ff', color: '#667eea' },
-  list: { display: 'grid', gap: '16px' },
-  empty: { textAlign: 'center' as const, padding: '60px', color: '#999', fontSize: '16px', background: 'white', borderRadius: '10px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' },
-  card: { background: 'white', padding: '20px', borderRadius: '10px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' },
-  cardHeader: { display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px', flexWrap: 'wrap' as const },
-  cardTitle: { fontSize: '18px', margin: 0, color: '#333' },
-  badge: { padding: '4px 12px', borderRadius: '12px', fontSize: '12px', fontWeight: '500' },
-  activeBadge: { padding: '4px 12px', background: '#e3f2fd', color: '#667eea', borderRadius: '12px', fontSize: '12px', fontWeight: '500' },
-  cardBody: { marginBottom: '12px' },
-  cardText: { fontSize: '14px', color: '#666', margin: '6px 0' },
-  cardActions: { display: 'flex', gap: '8px', flexWrap: 'wrap' as const },
-  actionBtn: { padding: '6px 16px', background: 'white', border: '1px solid #ddd', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', color: '#333' },
-  tokenPanel: { background: 'white', padding: '24px', borderRadius: '10px', marginBottom: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', border: '2px solid #1976d2' },
-  codeBlock: { display: 'inline-block', padding: '4px 8px', background: '#f5f5f5', borderRadius: '4px', fontSize: '13px', fontFamily: 'monospace', wordBreak: 'break-all' as const },
-  preBlock: { background: '#1e1e1e', color: '#d4d4d4', padding: '12px', borderRadius: '6px', fontSize: '13px', fontFamily: 'monospace', overflow: 'auto', whiteSpace: 'pre-wrap' as const },
+  fileLabel: { padding: '8px 14px', background: '#f5f5f5', border: '1px dashed var(--k8s-border)', borderRadius: '4px', cursor: 'pointer', fontSize: '13px', color: 'var(--k8s-text-secondary)' },
+  submitBtn: { width: '100%', padding: '10px', background: 'var(--k8s-blue)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '13px', fontWeight: 500 },
+  modeBtn: { flex: 1, padding: '10px 14px', border: '1px solid var(--k8s-border)', borderRadius: '4px', cursor: 'pointer', textAlign: 'center' as const, fontSize: '13px', fontWeight: 500, transition: 'all 0.15s', background: 'var(--k8s-card-bg)' },
+  modeBtnActive: { borderColor: 'var(--k8s-blue)', background: 'var(--k8s-blue-light)', color: 'var(--k8s-blue)' },
+  list: { display: 'grid', gap: '12px' },
+  empty: { textAlign: 'center' as const, padding: '48px', color: 'var(--k8s-text-muted)', fontSize: '14px', background: 'var(--k8s-card-bg)', borderRadius: 'var(--k8s-card-radius)', border: '1px solid var(--k8s-border)' },
+  card: { background: 'var(--k8s-card-bg)', padding: '16px 20px', borderRadius: 'var(--k8s-card-radius)', border: '1px solid var(--k8s-border)' },
+  cardHeader: { display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px', flexWrap: 'wrap' as const },
+  cardTitle: { fontSize: '15px', fontWeight: 600, margin: 0, color: 'var(--k8s-text-primary)' },
+  badge: { padding: '2px 10px', borderRadius: '3px', fontSize: '11px', fontWeight: 500 },
+  activeBadge: { padding: '2px 10px', background: 'var(--k8s-blue-light)', color: 'var(--k8s-blue)', borderRadius: '3px', fontSize: '11px', fontWeight: 500 },
+  cardBody: { marginBottom: '10px' },
+  cardText: { fontSize: '13px', color: 'var(--k8s-text-secondary)', margin: '4px 0' },
+  cardActions: { display: 'flex', gap: '6px', flexWrap: 'wrap' as const },
+  actionBtn: { padding: '5px 12px', background: 'var(--k8s-card-bg)', border: '1px solid var(--k8s-border)', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', color: 'var(--k8s-text-primary)', transition: 'border-color 0.15s' },
+  tokenPanel: { background: 'var(--k8s-card-bg)', padding: '20px', borderRadius: 'var(--k8s-card-radius)', marginBottom: '20px', border: '2px solid var(--k8s-blue)' },
+  codeBlock: { display: 'inline-block', padding: '3px 6px', background: '#f5f5f5', borderRadius: '3px', fontSize: '12px', fontFamily: 'var(--k8s-mono)', wordBreak: 'break-all' as const },
+  preBlock: { background: '#1e1e1e', color: '#d4d4d4', padding: '12px', borderRadius: '4px', fontSize: '12px', fontFamily: 'var(--k8s-mono)', overflow: 'auto', whiteSpace: 'pre-wrap' as const },
 };
 
 export default ClusterPage;
