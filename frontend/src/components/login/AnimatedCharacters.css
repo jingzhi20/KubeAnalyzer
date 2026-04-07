@@ -1,0 +1,251 @@
+.animated-characters-container {
+  position: relative;
+  width: 550px;
+  height: 400px;
+}
+
+.character {
+  position: absolute;
+  bottom: 0;
+  transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: bottom center;
+  will-change: transform;
+}
+
+/* Entrance animations */
+.purple-character {
+  animation: purple-entrance 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.purple-character.entrance-complete {
+  animation: none;
+}
+
+.black-character {
+  animation: black-entrance 1s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s backwards;
+}
+
+.black-character.entrance-complete {
+  animation: none;
+}
+
+.orange-character {
+  animation: orange-entrance 1.1s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s backwards;
+}
+
+.orange-character.entrance-complete {
+  animation: none;
+}
+
+.yellow-character {
+  animation: yellow-entrance 1s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s backwards;
+}
+
+.yellow-character.entrance-complete {
+  animation: none;
+}
+
+@keyframes purple-entrance {
+  0% {
+    transform: translateX(-150px) translateY(50px) rotate(-15deg) scale(0.3);
+    opacity: 0;
+  }
+  60% {
+    transform: translateX(10px) translateY(-10px) rotate(3deg) scale(1.05);
+  }
+  100% {
+    transform: translateX(0) translateY(0) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes black-entrance {
+  0% {
+    transform: translateY(-100px) scale(0.5);
+    opacity: 0;
+  }
+  70% {
+    transform: translateY(10px) scale(1.08);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes orange-entrance {
+  0% {
+    transform: translateX(-200px) translateY(80px) rotate(-25deg) scale(0.2);
+    opacity: 0;
+  }
+  65% {
+    transform: translateX(15px) translateY(-8px) rotate(5deg) scale(1.1);
+  }
+  100% {
+    transform: translateX(0) translateY(0) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes yellow-entrance {
+  0% {
+    transform: translateX(200px) translateY(60px) rotate(20deg) scale(0.3);
+    opacity: 0;
+  }
+  65% {
+    transform: translateX(-12px) translateY(-5px) rotate(-4deg) scale(1.06);
+  }
+  100% {
+    transform: translateX(0) translateY(0) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+}
+
+.eyes {
+  position: absolute;
+  display: flex;
+  transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: left, top;
+}
+
+.purple-character .eyes {
+  gap: 32px;
+}
+
+.black-character .eyes {
+  gap: 24px;
+}
+
+.orange-character .eyes {
+  gap: 32px;
+  transition: all 0.2s cubic-bezier(0, 0, 0.2, 1);
+}
+
+.yellow-character .eyes {
+  gap: 24px;
+  transition: all 0.2s cubic-bezier(0, 0, 0.2, 1);
+}
+
+.eyeball {
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  will-change: height, border-radius, transform;
+}
+
+.eyeball--sad {
+  /* Sad eye style */
+}
+
+.pupil {
+  border-radius: 50%;
+  transition: transform 0.1s ease-out, height 0.15s ease-out;
+  will-change: transform, height;
+}
+
+.purple-mouth-shape {
+  position: absolute;
+  width: 24px;
+  height: 8px;
+  background-color: #2D2D2D;
+  border-radius: 0 0 12px 12px;
+  transition: left 0.7s cubic-bezier(0.4, 0, 0.2, 1), top 0.7s cubic-bezier(0.4, 0, 0.2, 1), width 0.5s cubic-bezier(0.4, 0, 0.2, 1), height 0.5s cubic-bezier(0.4, 0, 0.2, 1), border-radius 0.5s cubic-bezier(0.4, 0, 0.2, 1), transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.purple-mouth-shape--typing {
+  width: 7px;
+  height: 32px;
+  border-radius: 0;
+  transform: translateX(13.5px) translateY(-28px) var(--counter-skew, skewX(0deg));
+}
+
+.purple-mouth-shape--sad {
+  width: 24px;
+  height: 8px;
+  border-radius: 12px 12px 0 0;
+}
+
+.purple-mouth-shape--happy {
+  width: 30px;
+  height: 16px;
+  border-radius: 0 0 15px 15px;
+}
+
+.orange-mouth-shape {
+  position: absolute;
+  width: 26px;
+  height: 13px;
+  background-color: #2D2D2D;
+  border-radius: 0 0 13px 13px;
+  transition: left 0.2s cubic-bezier(0, 0, 0.2, 1), top 0.2s cubic-bezier(0, 0, 0.2, 1), width 0.5s cubic-bezier(0.4, 0, 0.2, 1), height 0.5s cubic-bezier(0.4, 0, 0.2, 1), border-radius 0.5s cubic-bezier(0.4, 0, 0.2, 1), transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.orange-mouth-shape--typing {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  transform: translateX(6px);
+}
+
+.orange-mouth-shape--sad {
+  width: 26px;
+  height: 13px;
+  border-radius: 13px 13px 0 0;
+}
+
+.orange-mouth-shape--happy {
+  width: 32px;
+  height: 18px;
+  border-radius: 0 0 16px 16px;
+}
+
+.yellow-mouth-wrapper {
+  position: absolute;
+  transition: all 0.2s cubic-bezier(0, 0, 0.2, 1);
+}
+
+.yellow-mouth-path {
+  d: path('M0 10 Q10 10, 20 10 Q30 10, 40 10 Q50 10, 60 10 Q70 10, 80 10');
+  transition: d 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.yellow-mouth-path--wavy {
+  d: path('M0 10 Q10 2, 20 10 Q30 18, 40 10 Q50 2, 60 10 Q70 18, 80 10');
+}
+
+.yellow-mouth-path--happy {
+  d: path('M0 2 Q10 10, 20 14 Q30 18, 40 18 Q50 18, 60 14 Q70 10, 80 2');
+}
+
+/* Confetti */
+.confetti-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.confetti-piece {
+  position: absolute;
+  border-radius: 2px;
+  animation: confetti-fall linear forwards;
+}
+
+@keyframes confetti-fall {
+  0% {
+    translate: 0 0;
+    opacity: 1;
+  }
+  100% {
+    translate: 30px 200vh;
+    opacity: 1;
+    rotate: 720deg;
+  }
+}

@@ -1,0 +1,198 @@
+/* Fits inside Layout content area */
+.home-container {
+  position: relative;
+  width: calc(100% + 48px);
+  height: calc(100vh + 48px);
+  margin: -24px;
+  overflow: hidden;
+}
+
+/* ===== Topology Area ===== */
+.topo-area {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 50%, #e0f2f1 100%);
+  overflow: hidden;
+}
+
+/* SVG lines */
+.topo-lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.topo-line-main {
+  stroke: rgba(46, 125, 50, 0.2);
+  stroke-width: 2;
+  stroke-dasharray: 8 4;
+  animation: dashFlow 20s linear infinite;
+}
+
+.topo-line-sub {
+  stroke: rgba(0, 0, 0, 0.08);
+  stroke-width: 1.5;
+  stroke-dasharray: 5 3;
+}
+
+@keyframes dashFlow {
+  to { stroke-dashoffset: -240; }
+}
+
+/* Center bubble */
+.center-bubble {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #43a047, #2e7d32);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+  box-shadow:
+    0 0 0 6px rgba(46, 125, 50, 0.15),
+    0 0 0 14px rgba(46, 125, 50, 0.08),
+    0 8px 32px rgba(46, 125, 50, 0.3);
+  animation: centerPulse 3s ease-in-out infinite;
+  user-select: none;
+}
+
+@keyframes centerPulse {
+  0%, 100% { box-shadow: 0 0 0 6px rgba(46,125,50,0.15), 0 0 0 14px rgba(46,125,50,0.08), 0 8px 32px rgba(46,125,50,0.3); }
+  50% { box-shadow: 0 0 0 10px rgba(46,125,50,0.12), 0 0 0 22px rgba(46,125,50,0.06), 0 8px 40px rgba(46,125,50,0.35); }
+}
+
+.center-icon {
+  font-size: 36px;
+  margin-bottom: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.center-label {
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 2px;
+}
+
+/* Category bubble */
+.cat-bubble {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(8px);
+  border: 2.5px solid;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 4;
+  transition: box-shadow 0.3s;
+  cursor: default;
+  user-select: none;
+}
+
+.cat-bubble:hover {
+  box-shadow: 0 0 30px rgba(0,0,0,0.15);
+}
+
+.cat-icon {
+  font-size: 28px;
+  margin-bottom: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cat-name {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
+/* Case bubble */
+.case-bubble {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 3;
+  cursor: pointer;
+  transition: box-shadow 0.25s;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.12);
+  user-select: none;
+}
+
+.case-bubble:hover {
+  box-shadow: 0 6px 24px rgba(0,0,0,0.2);
+  z-index: 8;
+}
+
+.case-bubble.active {
+  box-shadow: 0 6px 24px rgba(0,0,0,0.25);
+  z-index: 8;
+}
+
+.case-icon {
+  font-size: 22px;
+  margin-bottom: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.case-title {
+  font-size: 10px;
+  font-weight: 600;
+  color: #fff;
+  text-align: center;
+  line-height: 1.2;
+  max-width: 60px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Detail tooltip */
+.topo-detail {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255,255,255,0.95);
+  backdrop-filter: blur(12px);
+  padding: 14px 24px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+  border: 1px solid rgba(46,125,50,0.12);
+  max-width: 520px;
+  z-index: 20;
+  font-size: 14px;
+  color: #333;
+  line-height: 1.6;
+  animation: detailFadeIn 0.2s ease-out;
+}
+
+@keyframes detailFadeIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
