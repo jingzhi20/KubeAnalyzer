@@ -275,7 +275,7 @@ const categories: Category[] = [
     ],
   },
   {
-    icon: <AppLayerIcon size={30} color="#78909c" />, name: '应用层隐性故障', color: '#78909c', stars: 3,
+    icon: <AppLayerIcon size={30} color="#78909c" />, name: '应用层故障', color: '#78909c', stars: 3,
     cases: [
       {
         icon: <ZombieProcessIcon size={22} />, title: '僵尸进程', phenomenon: 'Pod Running 但应用无响应',
@@ -297,7 +297,7 @@ const categories: Category[] = [
 
 const CENTER = { x: 50, y: 50 };
 const CAT_RADIUS = 28;
-const CASE_RADIUS = 13;
+const CASE_RADIUS = 18;
 const START_ANGLE = -90;
 
 function getPosition(cx: number, cy: number, radius: number, angleDeg: number) {
@@ -327,12 +327,27 @@ const priorityColors: Record<string, string> = { '高': '#ef5350', '中': '#ffa7
 
 function HomePage() {
   const [activeCase, setActiveCase] = useState<{ catIdx: number; caseIdx: number } | null>(null);
+  const [expandedCats, setExpandedCats] = useState<Set<number>>(new Set());
   const [offsets, setOffsets] = useState<Record<BubbleId, DragOffset>>({});
   const [returning, setReturning] = useState<Record<BubbleId, boolean>>({});
   const dragRef = useRef<{ id: BubbleId; startX: number; startY: number; hasMoved: boolean } | null>(null);
   const [floatOffsets, setFloatOffsets] = useState<Record<BubbleId, { fx: number; fy: number }>>({});
   const allBubbleIds = useRef<BubbleId[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const toggleCat = useCallback((ci: number) => {
+    setExpandedCats(prev => {
+      const next = new Set(prev);
+      if (next.has(ci)) {
+        next.delete(ci);
+        // Close any active case in this category
+        setActiveCase(ac => ac && ac.catIdx === ci ? null : ac);
+      } else {
+        next.add(ci);
+      }
+      return next;
+    });
+  }, []);
 
   if (allBubbleIds.current.length === 0) {
     allBubbleIds.current = ['center'];
@@ -440,8 +455,10 @@ function HomePage() {
     const catPos = catPositions[ci];
     const catAngle = START_ANGLE + (360 / categories.length) * ci;
     return cat.cases.map((_, ki) => {
-      const spread = cat.cases.length === 1 ? 0 : Math.min(35, 120 / cat.cases.length);
-      const offset = cat.cases.length === 1 ? 0 : (ki - (cat.cases.length - 1) / 2) * spread;
+      const n = cat.cases.length;
+      const totalArc = Math.min(160, n * 28);
+      const step = n === 1 ? 0 : totalArc / (n - 1);
+      const offset = n === 1 ? 0 : (ki - (n - 1) / 2) * step;
       return getPosition(catPos.x, catPos.y, CASE_RADIUS, catAngle + offset);
     });
   });
@@ -473,7 +490,7 @@ function HomePage() {
                   x2={`${cp.x + catOff.dx}%`} y2={`${cp.y + catOff.dy}%`}
                   className="topo-line-main"
                 />
-                {casePositions[ci].map((kp, ki) => {
+                {expandedCats.has(ci) && casePositions[ci].map((kp, ki) => {
                   const caseOff = getLineOffset(`case-${ci}-${ki}`);
                   return (
                     <line key={ki}
@@ -503,12 +520,13 @@ function HomePage() {
                 ...bubbleTransform(`cat-${ci}`),
               }}
               onMouseDown={e => handleMouseDown(e, `cat-${ci}`)}
+              onClick={() => { if (!dragRef.current?.hasMoved) toggleCat(ci); }}
             >
               <span className="cat-icon">{cat.icon}</span>
               <span className="cat-name" style={{ color: cat.color }}>{cat.name}</span>
-              <span className="cat-stars">{'★'.repeat(cat.stars)}</span>
+              <span className="cat-expand-hint">{expandedCats.has(ci) ? '−' : `+${cat.cases.length}`}</span>
             </div>
-            {cat.cases.map((c, ki) => {
+            {expandedCats.has(ci) && cat.cases.map((c, ki) => {
               const pos = casePositions[ci][ki];
               const isActive = activeCase?.catIdx === ci && activeCase?.caseIdx === ki;
               const bubbleId = `case-${ci}-${ki}`;

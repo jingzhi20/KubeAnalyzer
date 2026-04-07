@@ -93,8 +93,8 @@
 .cat-bubble {
   position: absolute;
   transform: translate(-50%, -50%);
-  width: 84px;
-  height: 84px;
+  width: 96px;
+  height: 96px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(8px);
@@ -105,41 +105,59 @@
   justify-content: center;
   z-index: 4;
   transition: box-shadow 0.3s;
-  cursor: default;
+  cursor: pointer;
   user-select: none;
+  overflow: hidden;
+  padding: 6px;
+  box-sizing: border-box;
 }
 
 .cat-bubble:hover {
   box-shadow: 0 0 30px rgba(0,0,0,0.15);
+  filter: brightness(1.03);
 }
 
 .cat-icon {
   font-size: 26px;
-  margin-bottom: 1px;
+  margin-bottom: 2px;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .cat-name {
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.5px;
+  text-align: center;
+  line-height: 1.2;
+  max-width: 72px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
-.cat-stars {
-  font-size: 7px;
-  color: #ffa726;
-  letter-spacing: 1px;
+.cat-expand-hint {
+  font-size: 9px;
+  color: #999;
+  font-weight: 600;
   margin-top: 1px;
+  background: rgba(0,0,0,0.06);
+  border-radius: 6px;
+  padding: 0 5px;
+  line-height: 1.5;
+  flex-shrink: 0;
 }
 
 /* Case bubble */
 .case-bubble {
   position: absolute;
   transform: translate(-50%, -50%);
-  width: 66px;
-  height: 66px;
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
   display: flex;
   flex-direction: column;
@@ -150,6 +168,9 @@
   transition: box-shadow 0.25s, filter 0.25s;
   box-shadow: 0 3px 12px rgba(0,0,0,0.12);
   user-select: none;
+  overflow: hidden;
+  padding: 6px;
+  box-sizing: border-box;
 }
 
 .case-bubble:hover {
@@ -166,10 +187,11 @@
 
 .case-icon {
   font-size: 20px;
-  margin-bottom: 1px;
+  margin-bottom: 2px;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .case-title {
@@ -178,10 +200,14 @@
   color: #fff;
   text-align: center;
   line-height: 1.15;
-  max-width: 56px;
+  max-width: 58px;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  white-space: normal;
+  word-break: break-all;
 }
 
 /* ===== Detail Panel ===== */
