@@ -45,7 +45,7 @@ function Layout() {
 
   const menuItems = [
     { path: '/app', label: '首页', icon: '🏠' },
-    { path: '/app/k8sgpt', label: 'k8s 集群分析', icon: '🔍' },
+    { path: '/app/k8sgpt', label: '集群分析', icon: '🔍' },
     { path: '/app/kubectl-ai', label: 'kubectl-ai', icon: '🤖' },
     { path: '/app/diagnosis', label: '诊断问答', icon: '💬' },
     { path: '/app/inspections', label: '巡检管理', icon: '📊' },

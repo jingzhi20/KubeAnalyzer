@@ -4,6 +4,7 @@ import ReactMarkdown from 'react-markdown';
 import type { K8sGPTAnalyzeResult, K8sGPTAnalyzeStats, ClusterConfig } from '../types';
 
 const traefikFilters = ['IngressRoute','IngressRouteTCP','IngressRouteUDP','Middleware','MiddlewareTCP','TraefikService','TLSOption','TLSStore'];
+const hiddenFilters = ['StatefulSet', 'CronJob', 'Job', 'PodDisruptionBudget', 'IngressRouteTCP', 'IngressRouteUDP', 'MiddlewareTCP', 'PersistentVolumeClaim', 'HPA', 'PersistentVolume'];
 const istioFilters = ['VirtualService','DestinationRule','IstioGateway','ServiceEntry','Sidecar','PeerAuthentication','AuthorizationPolicy'];
 const gatewayAPIFilters = ['GatewayClass','Gateway','HTTPRoute'];
 const olmFilters = ['ClusterCatalog','ClusterExtension','ClusterServiceVersion','Subscription','CatalogSource','OperatorGroup'];
@@ -13,11 +14,11 @@ const networkDiagFilters = ['NetworkComponentPods', 'IngressAccessLog'];
 // 诊断分析 - 核心诊断能力，独立展示
 const diagnosticFilters = ['Log', 'WarningEvents', 'Secret', 'Security', 'Storage'];
 const diagnosticLabels: Record<string, string> = {
-  'Log': '📋 日志分析',
-  'WarningEvents': '⚠️ 事件诊断',
-  'Secret': '🔐 Secret 检查',
-  'Security': '🛡️ 安全审计',
-  'Storage': '💾 存储健康',
+  'Log': '日志分析',
+  'WarningEvents': '事件诊断',
+  'Secret': 'Secret 检查',
+  'Security': '安全审计',
+  'Storage': '存储健康',
 };
 const networkDiagLabels: Record<string, string> = {
   'NetworkComponentPods': '网络组件 Pod 诊断',
@@ -132,68 +133,26 @@ function K8sGPTPage() {
   return (
     <div>
       <div style={styles.header}>
-        <h1 style={styles.title}>K8sGPT 集群分析</h1>
-        <select
-          style={styles.clusterSelect}
-          value={selectedClusterId}
-          onChange={(e) => setSelectedClusterId(Number(e.target.value))}
-        >
-          <option value={0}>请选择集群</option>
-          {clusters.map(c => (
-            <option key={c.id} value={c.id}>
-              {c.name}{c.status === 'connected' ? '' : ' (未连接)'}
-            </option>
-          ))}
-        </select>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <h1 style={styles.title}>分析参数</h1>
+          <span style={{ fontSize: '13px', color: '#999', marginTop: '4px' }}>资源过滤器（可多选，不选则分析默认资源）</span>
+        </div>
       </div>
 
       <div style={styles.analyzeSection}>
-        <h3 style={{ marginTop: 0 }}>分析参数</h3>
         <div style={styles.filtersWrap}>
-          <label style={styles.label}>资源过滤器（可多选，不选则分析默认资源）</label>
-          <div style={{ marginBottom: '6px', fontSize: '12px', color: '#999' }}>Kubernetes 核心资源</div>
-          <div style={styles.filterChips}>
-            {filters.filter(f => !specialFilters.includes(f)).map(f => (
-              <button key={f}
-                style={{
-                  ...styles.chip,
-                  background: selectedFilters.includes(f) ? '#667eea' : '#f5f5f5',
-                  color: selectedFilters.includes(f) ? 'white' : '#333',
-                }}
-                onClick={() => toggleFilter(f)}>
-                {f}
-              </button>
-            ))}
-          </div>
-          {filters.some(f => traefikFilters.includes(f)) && (
-            <>
-              <div style={{ marginTop: '12px', marginBottom: '6px', fontSize: '12px', color: '#999' }}>Traefik CRD 资源</div>
-              <div style={styles.filterChips}>
-                {filters.filter(f => traefikFilters.includes(f)).map(f => (
-                  <button key={f}
-                    style={{
-                      ...styles.chip,
-                      background: selectedFilters.includes(f) ? '#ff9800' : '#f5f5f5',
-                      color: selectedFilters.includes(f) ? 'white' : '#333',
-                    }}
-                    onClick={() => toggleFilter(f)}>
-                    {f}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-
+          {/* 网络诊断 - 快速排查，置顶 */}
           {filters.some(f => networkDiagFilters.includes(f)) && (
             <>
-              <div style={{ marginTop: '12px', marginBottom: '6px', fontSize: '12px', color: '#f44336', fontWeight: 500 }}>网络诊断（快速排查）</div>
+              <div style={styles.sectionLabel}>🌐 网络诊断（快速排查）</div>
               <div style={styles.filterChips}>
                 {filters.filter(f => networkDiagFilters.includes(f)).map(f => (
                   <button key={f}
                     style={{
-                      ...styles.chip,
-                      background: selectedFilters.includes(f) ? '#f44336' : '#f5f5f5',
-                      color: selectedFilters.includes(f) ? 'white' : '#333',
+                      ...styles.diagChip,
+                      background: selectedFilters.includes(f) ? '#1976d2' : '#e3f2fd',
+                      color: selectedFilters.includes(f) ? 'white' : '#1565c0',
+                      border: selectedFilters.includes(f) ? 'none' : '1px solid #90caf9',
                     }}
                     onClick={() => toggleFilter(f)}>
                     {networkDiagLabels[f] || f}
@@ -205,16 +164,15 @@ function K8sGPTPage() {
           {/* 诊断分析 - 核心诊断能力 */}
           {filters.some(f => diagnosticFilters.includes(f)) && (
             <>
-              <div style={{ marginTop: '16px', marginBottom: '6px', fontSize: '13px', color: '#1976d2', fontWeight: 600 }}>🔍 诊断分析（核心能力）</div>
+              <div style={{ ...styles.sectionLabel, marginTop: filters.some(f => networkDiagFilters.includes(f)) ? '16px' : 0 }}>🔍 诊断分析（核心能力）</div>
               <div style={styles.filterChips}>
                 {filters.filter(f => diagnosticFilters.includes(f)).map(f => (
                   <button key={f}
                     style={{
-                      ...styles.chip,
+                      ...styles.diagChip,
                       background: selectedFilters.includes(f) ? '#1976d2' : '#e3f2fd',
                       color: selectedFilters.includes(f) ? 'white' : '#1565c0',
                       border: selectedFilters.includes(f) ? 'none' : '1px solid #90caf9',
-                      fontWeight: 500,
                     }}
                     onClick={() => toggleFilter(f)}>
                     {diagnosticLabels[f] || f}
@@ -223,50 +181,131 @@ function K8sGPTPage() {
               </div>
             </>
           )}
-
-
-
-        </div>
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginTop: '16px', flexWrap: 'wrap' }}>
-          <div style={{ flex: 1, minWidth: '150px' }}>
-            <select style={{ ...styles.input, width: '100%' }} value={namespace}
-              onChange={(e) => setNamespace(e.target.value)}>
-              <option value="">全部 Namespace</option>
-              {namespaces.map(ns => (
-                <option key={ns} value={ns}>{ns}</option>
-              ))}
-            </select>
-          </div>
-          <button style={{ ...styles.configBtn, fontSize: '12px', padding: '6px 10px', whiteSpace: 'nowrap' as const }}
-            onClick={loadNamespaces} disabled={loadingNs}>
-            {loadingNs ? '加载中...' : '刷新NS'}
-          </button>
-          <div style={{ flex: 1, minWidth: '180px' }}>
-            <input style={{ ...styles.input, width: '100%' }} value={labelSelector}
-              onChange={(e) => setLabelSelector(e.target.value)}
-              placeholder="Label Selector (如: app=nginx)" />
-          </div>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
-            <input type="checkbox" checked={explain} onChange={(e) => setExplain(e.target.checked)} />
-            AI 解释
-          </label>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
-            <input type="checkbox" checked={withStats} onChange={(e) => setWithStats(e.target.checked)} />
-            统计
-          </label>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
-            <input type="checkbox" checked={useCache} onChange={(e) => setUseCache(e.target.checked)} />
-            缓存
-          </label>
-          {useCache && (
-            <button style={{ ...styles.configBtn, fontSize: '12px', padding: '6px 10px', whiteSpace: 'nowrap' as const, color: '#f44336', borderColor: '#f44336' }}
-              onClick={handleInvalidateCache}>
-              清除缓存
-            </button>
+          {/* Traefik CRD 资源 */}
+          {filters.some(f => traefikFilters.includes(f) && !hiddenFilters.includes(f)) && (
+            <>
+              <div style={{ ...styles.sectionLabel, marginTop: '16px' }}>🔀 Traefik CRD 资源</div>
+              <div style={styles.filterChips}>
+                {filters.filter(f => traefikFilters.includes(f) && !hiddenFilters.includes(f)).map(f => (
+                  <button key={f}
+                    style={{
+                      ...styles.diagChip,
+                      background: selectedFilters.includes(f) ? '#1976d2' : '#e3f2fd',
+                      color: selectedFilters.includes(f) ? 'white' : '#1565c0',
+                      border: selectedFilters.includes(f) ? 'none' : '1px solid #90caf9',
+                    }}
+                    onClick={() => toggleFilter(f)}>
+                    {f}
+                  </button>
+                ))}
+              </div>
+            </>
           )}
-          <button style={styles.analyzeBtn} onClick={handleAnalyze} disabled={analyzing}>
-            {analyzing ? '分析中...' : '开始分析'}
-          </button>
+          {/* Kubernetes 核心资源 */}
+          <div style={{ ...styles.sectionLabel, marginTop: '16px' }}>☸ Kubernetes 核心资源</div>
+          <div style={styles.filterChips}>
+            {filters.filter(f => !specialFilters.includes(f) && !hiddenFilters.includes(f)).map(f => (
+              <button key={f}
+                style={{
+                  ...styles.diagChip,
+                  background: selectedFilters.includes(f) ? '#1976d2' : '#e3f2fd',
+                  color: selectedFilters.includes(f) ? 'white' : '#1565c0',
+                  border: selectedFilters.includes(f) ? 'none' : '1px solid #90caf9',
+                }}
+                onClick={() => toggleFilter(f)}>
+                {f}
+              </button>
+            ))}
+          </div>
+        </div>
+        {/* 操作栏 */}
+        <div style={styles.toolbar}>
+          {/* 第一行：集群 → NS → 标签 */}
+          <div style={styles.toolbarRow}>
+            <div style={styles.fieldGroup}>
+              <span style={styles.fieldLabel}>☸ 集群</span>
+              <select
+                style={{
+                  ...styles.toolbarSelect,
+                  borderColor: selectedClusterId === 0 ? '#f44336' : '#30363d',
+                }}
+                value={selectedClusterId}
+                onChange={(e) => setSelectedClusterId(Number(e.target.value))}
+              >
+                <option value={0}>请选择集群 *</option>
+                {clusters.map(c => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}{c.status === 'connected' ? '' : ' (断开)'}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <span style={styles.separator}>›</span>
+
+            <div style={styles.fieldGroup}>
+              <span style={styles.fieldLabel}>📦 Namespace</span>
+              <div style={{ display: 'flex', gap: '4px' }}>
+                <select style={styles.toolbarSelect} value={namespace}
+                  onChange={(e) => setNamespace(e.target.value)}>
+                  <option value="">全部</option>
+                  {namespaces.map(ns => (
+                    <option key={ns} value={ns}>{ns}</option>
+                  ))}
+                </select>
+                <button style={styles.iconBtn} onClick={loadNamespaces} disabled={loadingNs}
+                  title="刷新 Namespace">
+                  {loadingNs ? '⏳' : '🔄'}
+                </button>
+              </div>
+            </div>
+
+            <span style={styles.separator}>›</span>
+
+            <div style={{ ...styles.fieldGroup, flex: 1 }}>
+              <span style={styles.fieldLabel}>🏷️ Label Selector</span>
+              <input style={styles.toolbarInput} value={labelSelector}
+                onChange={(e) => setLabelSelector(e.target.value)}
+                placeholder="app=nginx, tier=frontend" />
+            </div>
+          </div>
+
+          {/* 第二行：选项 + 开始分析 */}
+          <div style={styles.toolbarRow2}>
+            <div style={styles.toggleGroup}>
+              <button
+                style={{ ...styles.toggleBtn, ...(explain ? styles.toggleActive : {}) }}
+                onClick={() => setExplain(!explain)}>
+                🤖 AI 解释
+              </button>
+              <button
+                style={{ ...styles.toggleBtn, ...(withStats ? styles.toggleActive : {}) }}
+                onClick={() => setWithStats(!withStats)}>
+                📊 统计
+              </button>
+              <button
+                style={{ ...styles.toggleBtn, ...(useCache ? styles.toggleActive : {}) }}
+                onClick={() => setUseCache(!useCache)}>
+                💾 缓存
+              </button>
+              {useCache && (
+                <button style={{ ...styles.toggleBtn, color: '#f44336', borderColor: '#f44336' }}
+                  onClick={handleInvalidateCache}>
+                  🗑️ 清除缓存
+                </button>
+              )}
+            </div>
+            <button
+              style={{
+                ...styles.analyzeBtn2,
+                opacity: selectedClusterId === 0 ? 0.5 : 1,
+                cursor: selectedClusterId === 0 || analyzing ? 'not-allowed' : 'pointer',
+              }}
+              onClick={handleAnalyze}
+              disabled={analyzing || selectedClusterId === 0}>
+              {analyzing ? '⏳ 分析中...' : '▶ 开始分析'}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -334,16 +373,27 @@ function K8sGPTPage() {
 
 const styles: { [key: string]: React.CSSProperties } = {
   header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' },
-  title: { fontSize: '28px', color: '#333', margin: 0 },
-  configBtn: { padding: '8px 16px', background: 'white', border: '1px solid #ddd', borderRadius: '6px', cursor: 'pointer', fontSize: '14px' },
-  clusterSelect: { padding: '8px 12px', border: '1px solid #d0d5dd', borderRadius: '8px', fontSize: '14px', color: '#333', background: '#fff', cursor: 'pointer', minWidth: '200px', outline: 'none' },
-  label: { display: 'block', fontSize: '13px', color: '#666', marginBottom: '6px' },
-  input: { width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '14px', boxSizing: 'border-box' as const },
+  title: { fontSize: '22px', color: '#333', margin: 0 },
   analyzeSection: { background: 'white', padding: '24px', borderRadius: '10px', marginBottom: '24px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' },
   filtersWrap: { marginBottom: '8px' },
   filterChips: { display: 'flex', flexWrap: 'wrap' as const, gap: '8px', marginTop: '8px' },
   chip: { padding: '6px 14px', borderRadius: '16px', border: 'none', cursor: 'pointer', fontSize: '13px', transition: 'all 0.2s' },
-  analyzeBtn: { padding: '10px 28px', background: '#667eea', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', whiteSpace: 'nowrap' as const },
+  sectionLabel: { marginBottom: '8px', fontSize: '13px', color: '#1976d2', fontWeight: 600 },
+  diagChip: { padding: '6px 14px', borderRadius: '16px', cursor: 'pointer', fontSize: '13px', transition: 'all 0.2s', fontWeight: 500 },
+  // Toolbar - dark geek style
+  toolbar: { marginTop: '20px', background: '#0d1117', borderRadius: '10px', padding: '16px', display: 'flex', flexDirection: 'column' as const, gap: '12px' },
+  toolbarRow: { display: 'flex', alignItems: 'flex-end', gap: '12px', flexWrap: 'wrap' as const },
+  toolbarRow2: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' as const, borderTop: '1px solid #21262d', paddingTop: '12px' },
+  fieldGroup: { display: 'flex', flexDirection: 'column' as const, gap: '4px' },
+  fieldLabel: { fontSize: '11px', color: '#8b949e', fontWeight: 500, letterSpacing: '0.5px', textTransform: 'uppercase' as const },
+  separator: { color: '#30363d', fontSize: '20px', marginBottom: '6px', userSelect: 'none' as const },
+  toolbarSelect: { padding: '8px 12px', background: '#161b22', border: '1px solid #30363d', borderRadius: '6px', color: '#c9d1d9', fontSize: '13px', cursor: 'pointer', outline: 'none', minWidth: '140px' },
+  toolbarInput: { padding: '8px 12px', background: '#161b22', border: '1px solid #30363d', borderRadius: '6px', color: '#c9d1d9', fontSize: '13px', outline: 'none', width: '100%', boxSizing: 'border-box' as const },
+  iconBtn: { padding: '6px 8px', background: '#161b22', border: '1px solid #30363d', borderRadius: '6px', cursor: 'pointer', fontSize: '14px', lineHeight: 1 },
+  toggleGroup: { display: 'flex', gap: '6px', flexWrap: 'wrap' as const },
+  toggleBtn: { padding: '6px 12px', background: '#161b22', border: '1px solid #30363d', borderRadius: '6px', color: '#8b949e', fontSize: '12px', cursor: 'pointer', transition: 'all 0.2s', fontWeight: 500 },
+  toggleActive: { background: '#1f6feb', borderColor: '#1f6feb', color: '#fff' },
+  analyzeBtn2: { padding: '10px 24px', background: 'linear-gradient(135deg, #238636, #2ea043)', color: 'white', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 600, letterSpacing: '0.5px', whiteSpace: 'nowrap' as const, cursor: 'pointer' },
   resultSection: { background: 'white', padding: '24px', borderRadius: '10px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' },
   problemBadge: { fontSize: '14px', color: '#f44336', fontWeight: 'normal' },
   resultList: { display: 'grid', gap: '16px' },
