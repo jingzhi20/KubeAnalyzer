@@ -39,6 +39,7 @@ func CreateLLMConfig(c *gin.Context) {
 		return
 	}
 
+	config.APIKey = ""
 	c.JSON(201, config)
 }
 
@@ -50,6 +51,9 @@ func ListLLMConfigs(c *gin.Context) {
 		return
 	}
 
+	for i := range configs {
+		configs[i].APIKey = ""
+	}
 	c.JSON(200, configs)
 }
 
@@ -102,6 +106,7 @@ func UpdateLLMConfig(c *gin.Context) {
 		return
 	}
 
+	config.APIKey = ""
 	c.JSON(200, config)
 }
 
@@ -186,7 +191,7 @@ func SetDefaultLLMConfig(c *gin.Context) {
 	}
 
 	// Reset all configs to non-default
-	if err := database.DB.Model(&model.LLMConfig{}).Update("is_default", false).Error; err != nil {
+	if err := database.DB.Model(&model.LLMConfig{}).Where("1 = 1").Updates(map[string]interface{}{"is_default": false}).Error; err != nil {
 		response.InternalError(c, "DATABASE_ERROR", "设置默认配置失败", err.Error())
 		return
 	}
@@ -199,6 +204,7 @@ func SetDefaultLLMConfig(c *gin.Context) {
 		return
 	}
 
+	config.APIKey = ""
 	c.JSON(200, gin.H{"message": "默认配置已更新", "config": config})
 }
 
@@ -210,5 +216,6 @@ func GetDefaultLLMConfig(c *gin.Context) {
 		return
 	}
 
+	config.APIKey = ""
 	c.JSON(200, config)
 }

@@ -26,6 +26,8 @@ export const diagnosisApi = {
   createSession: (data: { title: string }) => api.post<DiagnosisSession>('/diagnosis/sessions', data),
   listSessions: () => api.get<DiagnosisSession[]>('/diagnosis/sessions'),
   getSession: (id: number) => api.get<DiagnosisSession>(`/diagnosis/sessions/${id}`),
+  deleteSession: (id: number) => api.delete(`/diagnosis/sessions/${id}`),
+  renameSession: (id: number, title: string) => api.put<DiagnosisSession>(`/diagnosis/sessions/${id}/rename`, { title }),
   submitQuery: (sessionId: number, data: { question: string }) => 
     api.post<DiagnosisRecord>(`/diagnosis/sessions/${sessionId}/query`, data),
 };

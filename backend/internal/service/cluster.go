@@ -18,11 +18,25 @@ func NewClusterService() *ClusterService {
 }
 
 // ListClusters returns all cluster configurations.
+// For agent-mode clusters, dynamically check heartbeat timeout to update agent_status.
 func (s *ClusterService) ListClusters() ([]model.ClusterConfig, error) {
 	var clusters []model.ClusterConfig
 	if err := database.DB.Order("created_at desc").Find(&clusters).Error; err != nil {
 		return nil, fmt.Errorf("failed to list clusters: %w", err)
 	}
+
+	// Check agent heartbeat timeout (60 seconds)
+	now := time.Now()
+	for i := range clusters {
+		if clusters[i].ConnMode == "agent" && clusters[i].AgentStatus == "online" {
+			if clusters[i].LastPingAt == nil || now.Sub(*clusters[i].LastPingAt) > 60*time.Second {
+				clusters[i].AgentStatus = "offline"
+				// Persist the status change
+				database.DB.Model(&clusters[i]).Update("agent_status", "offline")
+			}
+		}
+	}
+
 	return clusters, nil
 }
 

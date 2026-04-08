@@ -287,7 +287,7 @@ function KubectlAIPage() {
           </div>
         )}
 
-        {output && (
+        {output && mode === 'execute' && (
           <div style={styles.outputSection}>
             <h3 style={{ marginTop: 0, marginBottom: '12px' }}>输出结果</h3>
             <pre style={styles.outputPre}>{output}</pre>

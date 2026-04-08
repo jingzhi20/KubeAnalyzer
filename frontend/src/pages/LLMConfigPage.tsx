@@ -6,6 +6,7 @@ function LLMConfigPage() {
   const [configs, setConfigs] = useState<LLMConfig[]>([]);
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     api_url: '',
@@ -30,15 +31,32 @@ function LLMConfigPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      await llmConfigApi.create(formData);
+      if (editingId !== null) {
+        await llmConfigApi.update(editingId, formData);
+      } else {
+        await llmConfigApi.create(formData);
+      }
       setFormData({ name: '', api_url: '', api_key: '', model_name: '' });
       setShowForm(false);
+      setEditingId(null);
       loadConfigs();
     } catch (err: any) {
-      alert(err.response?.data?.error?.message || '创建失败');
+      alert(err.response?.data?.error?.message || (editingId ? '更新失败' : '创建失败'));
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleEdit = (config: LLMConfig) => {
+    setEditingId(config.id);
+    setFormData({ name: config.name, api_url: config.api_url, api_key: '', model_name: config.model_name });
+    setShowForm(true);
+  };
+
+  const handleCancel = () => {
+    setShowForm(false);
+    setEditingId(null);
+    setFormData({ name: '', api_url: '', api_key: '', model_name: '' });
   };
 
   const handleTest = async (id: number) => {
@@ -47,7 +65,8 @@ function LLMConfigPage() {
       alert('连通性测试成功');
       loadConfigs();
     } catch (err: any) {
-      alert(err.response?.data?.error?.message || '测试失败');
+      const e = err.response?.data?.error;
+      alert(e ? `${e.message}\n\n${e.detail || ''}` : '测试失败');
     }
   };
 
@@ -74,7 +93,7 @@ function LLMConfigPage() {
     <div>
       <div style={styles.header}>
         <h1 style={styles.title}>LLM 配置管理</h1>
-        <button style={styles.addBtn} onClick={() => setShowForm(!showForm)}>
+        <button style={styles.addBtn} onClick={() => { setShowForm(!showForm); setEditingId(null); setFormData({ name: '', api_url: '', api_key: '', model_name: '' }); }}>
           {showForm ? '取消' : '+ 新增配置'}
         </button>
       </div>
@@ -84,6 +103,9 @@ function LLMConfigPage() {
           {/* Hidden fields to trap browser autofill */}
           <input type="text" name="trap-user" style={{ display: 'none' }} tabIndex={-1} autoComplete="username" />
           <input type="password" name="trap-pass" style={{ display: 'none' }} tabIndex={-1} autoComplete="current-password" />
+          <div style={{ marginBottom: '12px', fontSize: '13px', fontWeight: 600, color: 'var(--k8s-text-primary)' }}>
+            {editingId ? '编辑配置' : '新增配置'}
+          </div>
           <div style={styles.formGrid}>
             <div>
               <label style={styles.formLabel}>提供方名称</label>
@@ -122,7 +144,7 @@ function LLMConfigPage() {
               />
             </div>
             <div>
-              <label style={styles.formLabel}>API Key</label>
+              <label style={styles.formLabel}>API Key{editingId && <span style={{ color: 'var(--k8s-text-muted)', fontWeight: 400 }}> （留空则不修改）</span>}</label>
               <input
                 style={styles.input}
                 placeholder="sk-..."
@@ -131,21 +153,26 @@ function LLMConfigPage() {
                 onChange={(e) => setFormData({ ...formData, api_key: e.target.value })}
                 name="llm_secret_token"
                 autoComplete="one-time-code"
-                required
+                required={!editingId}
               />
             </div>
           </div>
-          <button type="submit" style={styles.submitBtn} disabled={loading}>
-            {loading ? '保存中...' : '保存'}
-          </button>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button type="submit" style={styles.submitBtn} disabled={loading}>
+              {loading ? '保存中...' : (editingId ? '更新' : '保存')}
+            </button>
+            <button type="button" style={{ ...styles.submitBtn, background: 'var(--k8s-border)', color: 'var(--k8s-text-primary)' }} onClick={handleCancel}>
+              取消
+            </button>
+          </div>
         </form>
       )}
 
       <div style={styles.list}>
-        {configs.length === 0 && (
+        {!editingId && configs.length === 0 && (
           <div style={styles.empty}>暂无 LLM 配置，请添加一个大模型配置</div>
         )}
-        {configs.map(config => (
+        {!editingId && configs.map(config => (
           <div key={config.id} style={styles.card}>
             <div style={styles.cardHeader}>
               <h3 style={styles.cardTitle}>{config.name}</h3>
@@ -164,6 +191,7 @@ function LLMConfigPage() {
             </div>
             <div style={styles.cardActions}>
               <button style={styles.actionBtn} onClick={() => handleTest(config.id)}>测试</button>
+              <button style={styles.actionBtn} onClick={() => handleEdit(config)}>编辑</button>
               {!config.is_default && (
                 <button style={styles.actionBtn} onClick={() => handleSetDefault(config.id)}>设为默认</button>
               )}

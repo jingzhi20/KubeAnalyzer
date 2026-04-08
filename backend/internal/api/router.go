@@ -72,6 +72,8 @@ func SetupRouter() *gin.Engine {
 			diagnosis.POST("/sessions", CreateSession)
 			diagnosis.GET("/sessions", ListSessions)
 			diagnosis.GET("/sessions/:id", GetSession)
+			diagnosis.DELETE("/sessions/:id", DeleteSession)
+			diagnosis.PUT("/sessions/:id/rename", RenameSession)
 			diagnosis.POST("/sessions/:id/query", SubmitQuery)
 		}
 

@@ -69,7 +69,17 @@ func (c *llmClient) ChatCompletion(ctx context.Context, config LLMConfig, messag
 		return "", fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "POST", config.APIURL, bytes.NewBuffer(jsonData))
+	apiURL := config.APIURL
+	// Ensure the URL ends with the chat completions path
+	if apiURL != "" && apiURL[len(apiURL)-1] == '/' {
+		apiURL = apiURL[:len(apiURL)-1]
+	}
+	// Auto-append /v1/chat/completions if not already present
+	if len(apiURL) < len("/chat/completions") || apiURL[len(apiURL)-len("/chat/completions"):] != "/chat/completions" {
+		apiURL += "/v1/chat/completions"
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "POST", apiURL, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return "", fmt.Errorf("failed to create request: %w", err)
 	}

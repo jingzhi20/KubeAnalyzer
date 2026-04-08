@@ -214,7 +214,7 @@ function HomePage() {
   return (
     <div className="min-h-full">
       {/* Date picker */}
-      <div className="mb-6">
+      <div className="mb-12">
         <div className="relative inline-flex items-center gap-2">
           <CalendarDays size={18} className="text-gray-500" />
           <input
@@ -235,7 +235,7 @@ function HomePage() {
       </div>
 
       {/* Calendar Grid */}
-      <div className="bg-white rounded-2xl shadow-sm shadow-gray-100 border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-sm shadow-gray-100 border border-gray-100 overflow-hidden pt-8">
         {/* Day headers */}
         <div className="grid grid-cols-[70px_repeat(7,1fr)] border-b border-gray-100">
           <div /> {/* spacer for time column */}
@@ -252,7 +252,7 @@ function HomePage() {
                     : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600'
                 }`}
               >
-                {dayNum} - {day}
+                {day}
               </div>
             );
           })}

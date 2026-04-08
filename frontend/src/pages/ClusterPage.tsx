@@ -291,7 +291,18 @@ function ClusterPage() {
                 {cluster.server_url && <p style={styles.cardText}><strong>Server：</strong>{cluster.server_url}</p>}
                 <p style={styles.cardText}><strong>创建时间：</strong>{new Date(cluster.created_at).toLocaleString()}</p>
                 {cluster.conn_mode === 'agent' && cluster.last_ping_at && (
-                  <p style={styles.cardText}><strong>最后心跳：</strong>{new Date(cluster.last_ping_at).toLocaleString()}</p>
+                  <p style={styles.cardText}>
+                    <strong>最后心跳：</strong>{new Date(cluster.last_ping_at).toLocaleString()}
+                    {cluster.agent_status === 'online' && (
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', marginLeft: '10px' }}>
+                        <span style={{ position: 'relative', display: 'inline-flex', width: '8px', height: '8px' }}>
+                          <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: '#4caf50', opacity: 0.75, animation: 'ping 1s cubic-bezier(0,0,0.2,1) infinite' }} />
+                          <span style={{ position: 'relative', width: '8px', height: '8px', borderRadius: '50%', background: '#4caf50' }} />
+                        </span>
+                        <span style={{ fontSize: '12px', color: '#4caf50', fontWeight: 500 }}>{cluster.name}</span>
+                      </span>
+                    )}
+                  </p>
                 )}
                 {cluster.conn_mode === 'agent' && cluster.agent_status === 'online' && (
                   <p style={styles.cardText}>

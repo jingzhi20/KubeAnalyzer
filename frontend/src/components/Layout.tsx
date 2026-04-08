@@ -86,7 +86,7 @@ function Layout() {
       iconActive: 'text-cyan-600',
     },
     {
-      path: '/app/k8sgpt', label: '集群分析', icon: <Search size={18} />,
+      path: '/app/k8sgpt', label: '快速诊断', icon: <Search size={18} />,
       gradient: 'bg-gradient-to-r from-cyan-100/90 to-blue-50/70',
       iconActive: 'text-cyan-600',
     },
@@ -96,7 +96,7 @@ function Layout() {
       iconActive: 'text-cyan-600',
     },
     {
-      path: '/app/diagnosis', label: '诊断问答', icon: <MessageCircle size={18} />,
+      path: '/app/diagnosis', label: '多轮问答', icon: <MessageCircle size={18} />,
       gradient: 'bg-gradient-to-r from-cyan-100/90 to-blue-50/70',
       iconActive: 'text-cyan-600',
     },
@@ -271,19 +271,6 @@ function Layout() {
 
         {/* Bottom Section */}
         <div style={{ padding: '8px 20px 40px 20px', marginTop: '-24px' }} className="bg-gradient-to-t from-white via-white to-transparent">
-          {/* Cluster indicator */}
-          {activeCluster && (
-            <div className="mb-3 px-3 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-50/80 to-teal-50/50 flex items-center gap-2.5 ring-1 ring-emerald-100/50 shadow-sm">
-              <div className="relative flex items-center justify-center w-2 h-2">
-                <span className="absolute w-full h-full rounded-full bg-emerald-400 animate-ping opacity-75" />
-                <span className="relative w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              </div>
-              <span className="text-[13px] font-semibold text-emerald-700 truncate">
-                {activeCluster.name}
-              </span>
-            </div>
-          )}
-
           {/* User section */}
           {currentUser && (
             <div className="relative border-t border-gray-100/80 pt-3 mt-1">

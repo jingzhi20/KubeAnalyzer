@@ -23,7 +23,7 @@ type LLMConfig struct {
 	ID        uint      `gorm:"primaryKey" json:"id"`
 	Name      string    `gorm:"size:100;not null" json:"name"`
 	APIURL    string    `gorm:"size:500;not null" json:"api_url"`
-	APIKey    string    `gorm:"size:500;not null" json:"-"`
+	APIKey    string    `gorm:"size:500;not null" json:"api_key"`
 	ModelName string    `gorm:"size:100;not null" json:"model_name"`
 	IsDefault bool      `gorm:"default:false" json:"is_default"`
 	Status    string    `gorm:"size:20;default:unavailable" json:"status"` // available / unavailable

@@ -64,6 +64,49 @@ func GetSession(c *gin.Context) {
 	c.JSON(200, session)
 }
 
+// DeleteSession handles deleting a diagnosis session.
+func DeleteSession(c *gin.Context) {
+	userID := c.GetUint("user_id")
+	sessionID, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		response.BadRequest(c, "INVALID_ID", "会话 ID 格式错误", "")
+		return
+	}
+
+	if err := diagnosisSvc.DeleteSession(uint(sessionID), userID); err != nil {
+		response.NotFound(c, "SESSION_NOT_FOUND", "会话不存在", "")
+		return
+	}
+
+	c.JSON(200, gin.H{"message": "删除成功"})
+}
+
+// RenameSession handles renaming a diagnosis session.
+func RenameSession(c *gin.Context) {
+	userID := c.GetUint("user_id")
+	sessionID, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		response.BadRequest(c, "INVALID_ID", "会话 ID 格式错误", "")
+		return
+	}
+
+	var req struct {
+		Title string `json:"title" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "INVALID_INPUT", "请求参数错误", err.Error())
+		return
+	}
+
+	session, err := diagnosisSvc.RenameSession(uint(sessionID), userID, req.Title)
+	if err != nil {
+		response.NotFound(c, "SESSION_NOT_FOUND", "会话不存在", "")
+		return
+	}
+
+	c.JSON(200, session)
+}
+
 // SubmitQuery handles submitting a diagnosis query.
 func SubmitQuery(c *gin.Context) {
 	userID := c.GetUint("user_id")

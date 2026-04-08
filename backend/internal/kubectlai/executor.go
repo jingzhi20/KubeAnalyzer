@@ -105,7 +105,7 @@ func (e *Executor) Generate(ctx context.Context, prompt string) (*ExecuteResult,
 	return &ExecuteResult{
 		Prompt:  prompt,
 		Command: command,
-		Output:  response,
+		// Output is intentionally empty: command was generated but not executed
 	}, nil
 }
 
