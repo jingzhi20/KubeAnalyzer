@@ -62,7 +62,10 @@ function FeishuSSOConfigPage() {
       </div>
 
       <div style={styles.card}>
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} autoComplete="off">
+          {/* Hidden fields to trap browser autofill */}
+          <input type="text" name="trap-user" style={{ display: 'none' }} tabIndex={-1} autoComplete="username" />
+          <input type="password" name="trap-pass" style={{ display: 'none' }} tabIndex={-1} autoComplete="current-password" />
           <div style={styles.formGroup}>
             <label style={styles.label}>
               飞书应用 ID (App ID)
@@ -74,6 +77,8 @@ function FeishuSSOConfigPage() {
               placeholder="cli_xxxxxxxxxxxxx"
               value={formData.app_id}
               onChange={(e) => setFormData({ ...formData, app_id: e.target.value })}
+              name="feishu_app_id"
+              autoComplete="one-time-code"
               required
             />
             <p style={styles.hint}>
@@ -93,6 +98,8 @@ function FeishuSSOConfigPage() {
                 placeholder="xxxxxxxxxxxxxxxx"
                 value={formData.app_secret}
                 onChange={(e) => setFormData({ ...formData, app_secret: e.target.value })}
+                name="feishu_app_secret"
+                autoComplete="one-time-code"
                 required
               />
               <button
@@ -170,7 +177,6 @@ function FeishuSSOConfigPage() {
 
 const styles: { [key: string]: React.CSSProperties } = {
   container: {
-    maxWidth: '720px',
   },
   header: {
     marginBottom: '20px',

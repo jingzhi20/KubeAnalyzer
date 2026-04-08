@@ -9,7 +9,7 @@ echo "=========================================="
 MYSQL_HOST="localhost"
 MYSQL_PORT="3306"
 MYSQL_USER="root"
-MYSQL_PASSWORD='Zjz5740##'
+MYSQL_PASSWORD=''
 MYSQL_DATABASE="aiops"
 
 echo ""

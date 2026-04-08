@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import { Outlet, useNavigate, Link, useLocation } from 'react-router-dom';
 import { clusterApi } from '../api';
 import type { ClusterConfig, User } from '../types';
@@ -43,28 +43,45 @@ function Layout() {
     navigate('/login');
   };
 
-  const menuItems = [
+  const [sysMenuOpen, setSysMenuOpen] = useState(false);
+
+  type MenuItem = { path: string; label: string; icon: string; adminOnly?: boolean };
+  type MenuGroup = { group: string; icon: string; children: MenuItem[] };
+  type MenuEntry = MenuItem | MenuGroup;
+
+  const isGroup = (entry: MenuEntry): entry is MenuGroup => 'group' in entry;
+
+  const menuEntries: MenuEntry[] = [
     { path: '/app', label: '首页', icon: '🏠' },
     { path: '/app/k8sgpt', label: '集群分析', icon: '🔍' },
     { path: '/app/kubectl-ai', label: 'kubectl-ai', icon: '🤖' },
     { path: '/app/diagnosis', label: '诊断问答', icon: '💬' },
     { path: '/app/inspections', label: '巡检管理', icon: '📊' },
-    { path: '/app/clusters', label: '集群配置', icon: '☁️' },
-    { path: '/app/llm-configs', label: 'LLM配置', icon: '⚙️' },
-    { path: '/app/notifications', label: '通知配置', icon: '📧' },
-    { path: '/app/feishu-sso', label: '飞书 SSO', icon: '🔐', adminOnly: true },
     { path: '/app/users', label: '用户管理', icon: '👥', adminOnly: true },
+    {
+      group: '系统管理',
+      icon: '⚙️',
+      children: [
+        { path: '/app/clusters', label: '集群配置', icon: '☁️' },
+        { path: '/app/llm-configs', label: 'LLM配置', icon: '🧠' },
+        { path: '/app/notifications', label: '通知配置', icon: '📧' },
+        { path: '/app/feishu-sso', label: '飞书 SSO', icon: '🔐', adminOnly: true },
+      ],
+    },
   ];
 
-  const filteredMenuItems = menuItems.filter(item => {
-    if (item.adminOnly && currentUser?.role !== 'admin') {
-      return false;
-    }
-    return true;
-  });
-
-  const isActive = (item: typeof menuItems[0]) =>
+  const isActive = (item: MenuItem) =>
     item.path === '/app' ? location.pathname === '/app' : location.pathname.startsWith(item.path);
+
+  const isAdmin = currentUser?.role === 'admin';
+
+  // Auto-expand system menu when a child route is active
+  useEffect(() => {
+    const sysGroup = menuEntries.find(e => isGroup(e)) as MenuGroup | undefined;
+    if (sysGroup?.children.some(c => location.pathname.startsWith(c.path))) {
+      setSysMenuOpen(true);
+    }
+  }, [location.pathname]);
 
   return (
     <div style={styles.container}>
@@ -96,19 +113,73 @@ function Layout() {
 
         {/* Nav */}
         <nav style={styles.nav}>
-          {filteredMenuItems.map(item => (
-            <Link
-              key={item.path}
-              to={item.path}
-              style={{
-                ...styles.menuItem,
-                ...(isActive(item) ? styles.menuItemActive : {}),
-              }}
-            >
-              <span style={styles.menuIcon}>{item.icon}</span>
-              {!collapsed && <span style={styles.menuLabel}>{item.label}</span>}
-            </Link>
-          ))}
+          {menuEntries.map((entry, idx) => {
+            if (isGroup(entry)) {
+              const visibleChildren = entry.children.filter(c => !c.adminOnly || isAdmin);
+              if (visibleChildren.length === 0) return null;
+              const groupActive = visibleChildren.some(c => location.pathname.startsWith(c.path));
+              return (
+                <Fragment key={idx}>
+                  <div
+                    style={{
+                      ...styles.menuItem,
+                      ...(groupActive && !sysMenuOpen ? styles.menuItemActive : {}),
+                      cursor: 'pointer',
+                      userSelect: 'none' as const,
+                      justifyContent: collapsed ? 'center' : 'flex-start',
+                    }}
+                    onClick={() => setSysMenuOpen(!sysMenuOpen)}
+                    role="button"
+                    tabIndex={0}
+                    aria-expanded={sysMenuOpen}
+                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') setSysMenuOpen(!sysMenuOpen); }}
+                  >
+                    <span style={styles.menuIcon}>{entry.icon}</span>
+                    {!collapsed && (
+                      <>
+                        <span style={{ ...styles.menuLabel, flex: 1 }}>{entry.group}</span>
+                        <span style={{
+                          fontSize: '10px',
+                          color: '#888',
+                          transition: 'transform 0.2s',
+                          transform: sysMenuOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                        }}>▾</span>
+                      </>
+                    )}
+                  </div>
+                  {sysMenuOpen && visibleChildren.map(child => (
+                    <Link
+                      key={child.path}
+                      to={child.path}
+                      style={{
+                        ...styles.menuItem,
+                        ...(isActive(child) ? styles.menuItemActive : {}),
+                        paddingLeft: collapsed ? '16px' : '32px',
+                      }}
+                    >
+                      <span style={styles.menuIcon}>{child.icon}</span>
+                      {!collapsed && <span style={styles.menuLabel}>{child.label}</span>}
+                    </Link>
+                  ))}
+                </Fragment>
+              );
+            }
+            const item = entry as MenuItem;
+            if (item.adminOnly && !isAdmin) return null;
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                style={{
+                  ...styles.menuItem,
+                  ...(isActive(item) ? styles.menuItemActive : {}),
+                }}
+              >
+                <span style={styles.menuIcon}>{item.icon}</span>
+                {!collapsed && <span style={styles.menuLabel}>{item.label}</span>}
+              </Link>
+            );
+          })}
         </nav>
 
         {/* User section */}

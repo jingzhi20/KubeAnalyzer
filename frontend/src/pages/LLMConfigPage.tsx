@@ -142,6 +142,9 @@ function LLMConfigPage() {
       )}
 
       <div style={styles.list}>
+        {configs.length === 0 && (
+          <div style={styles.empty}>暂无 LLM 配置，请添加一个大模型配置</div>
+        )}
         {configs.map(config => (
           <div key={config.id} style={styles.card}>
             <div style={styles.cardHeader}>
@@ -241,6 +244,15 @@ const styles: { [key: string]: React.CSSProperties } = {
   list: {
     display: 'grid',
     gap: '12px',
+  },
+  empty: {
+    textAlign: 'center' as const,
+    padding: '48px',
+    color: 'var(--k8s-text-muted)',
+    fontSize: '14px',
+    background: 'var(--k8s-card-bg)',
+    borderRadius: 'var(--k8s-card-radius)',
+    border: '1px solid var(--k8s-border)',
   },
   card: {
     background: 'var(--k8s-card-bg)',

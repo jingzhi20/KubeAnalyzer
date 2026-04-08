@@ -4,6 +4,8 @@ Thumbs.db
 
 # Editor / IDE
 .vscode/*
+.kiro
+.qoder
 !.vscode/extensions.json
 .idea/
 *.suo

@@ -52,6 +52,10 @@ function NotificationPage() {
       <h1 style={styles.title}>通知配置</h1>
       
       <div style={styles.card}>
+        <form autoComplete="off">
+          <input type="text" name="trap-user" style={{ display: 'none' }} tabIndex={-1} autoComplete="username" />
+          <input type="password" name="trap-pass" style={{ display: 'none' }} tabIndex={-1} autoComplete="current-password" />
+        </form>
         <div style={styles.formGroup}>
           <label style={styles.label}>飞书 Webhook 地址</label>
           <input
@@ -59,6 +63,8 @@ function NotificationPage() {
             value={config.webhook_url}
             onChange={(e) => setConfig({ ...config, webhook_url: e.target.value })}
             placeholder="https://open.feishu.cn/open-apis/bot/v2/hook/..."
+            name="notif_webhook_url"
+            autoComplete="one-time-code"
           />
         </div>
 
@@ -69,6 +75,8 @@ function NotificationPage() {
             value={config.sign_key}
             onChange={(e) => setConfig({ ...config, sign_key: e.target.value })}
             placeholder="签名密钥"
+            name="notif_sign_key"
+            autoComplete="one-time-code"
           />
         </div>
 
@@ -119,7 +127,6 @@ const styles: { [key: string]: React.CSSProperties } = {
     padding: '24px',
     borderRadius: 'var(--k8s-card-radius)',
     border: '1px solid var(--k8s-border)',
-    maxWidth: '720px',
   },
   formGroup: {
     marginBottom: '20px',
