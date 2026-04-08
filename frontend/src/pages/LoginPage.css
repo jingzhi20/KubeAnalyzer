@@ -12,9 +12,39 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(to bottom right, #1a237e, #283593, #303f9f);
+  background: linear-gradient(to bottom right, #9ca3af, #6b7280, #4b5563);
   padding: 3rem;
   color: white;
+}
+
+.brand-logo {
+  position: absolute;
+  top: 2rem;
+  left: 2rem;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.brand-logo-icon {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.brand-logo-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.brand-logo-text {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  letter-spacing: 0.02em;
 }
 
 .characters-section {
@@ -86,15 +116,11 @@
 }
 
 .form-title {
-  font-size: 2.5rem;
+  font-size: 1.875rem;
   font-weight: 700;
   letter-spacing: -0.025em;
   margin-bottom: 0;
-  color: #303030;
-  background: none;
-  -webkit-background-clip: unset;
-  -webkit-text-fill-color: unset;
-  background-clip: unset;
+  color: #111827;
 }
 
 .login-form {
@@ -128,7 +154,7 @@
 }
 
 .form-input:focus {
-  border-color: #326ce5;
+  border-color: #6366f1;
 }
 
 .password-wrapper {
@@ -191,7 +217,7 @@
   cursor: pointer;
   overflow: hidden;
   transition: all 0.3s;
-  background: #326ce5;
+  background: #111827;
   color: white;
   border: none;
 }

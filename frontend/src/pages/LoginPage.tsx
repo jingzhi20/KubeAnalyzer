@@ -78,6 +78,18 @@ function LoginPage() {
     <div className="login-page">
       {/* Left Content Section with Animated Characters */}
       <div className="left-section">
+        {/* Brand Logo */}
+        <div className="brand-logo">
+          <div className="brand-logo-icon">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2L2 7l10 5 10-5-10-5z" fill="rgba(255,255,255,0.9)"/>
+              <path d="M2 17l10 5 10-5" stroke="rgba(255,255,255,0.9)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+              <path d="M2 12l10 5 10-5" stroke="rgba(255,255,255,0.9)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+            </svg>
+          </div>
+          <span className="brand-logo-text">KubeAnalyzer</span>
+        </div>
+
         <div className="characters-section">
           <AnimatedCharacters
             isTyping={isTyping}

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { k8sgptApi, clusterApi } from '../api';
 import ReactMarkdown from 'react-markdown';
 import type { K8sGPTAnalyzeResult, K8sGPTAnalyzeStats, ClusterConfig } from '../types';
+import CustomSelect from '../components/CustomSelect';
 
 const traefikFilters = ['IngressRoute','IngressRouteTCP','IngressRouteUDP','Middleware','MiddlewareTCP','TraefikService','TLSOption','TLSStore'];
 const hiddenFilters = ['StatefulSet', 'CronJob', 'Job', 'PodDisruptionBudget', 'IngressRouteTCP', 'IngressRouteUDP', 'MiddlewareTCP', 'PersistentVolumeClaim', 'HPA', 'PersistentVolume'];
@@ -131,21 +132,93 @@ function K8sGPTPage() {
   };
 
   return (
-    <div>
-      <div style={styles.analyzeSection}>
-        <div style={styles.filtersWrap}>
-          {/* 网络诊断 - 快速排查，置顶 */}
+    <div style={styles.container}>
+      {/* 核心配置区域 */}
+      <div style={styles.topCard}>
+        <div style={styles.cardHeader}>
+          <h2 style={styles.cardTitle}>🔍 诊断范围选择</h2>
+        </div>
+        <div style={styles.toolbarRow}>
+          <div style={styles.fieldGroup}>
+            <span style={styles.fieldLabel}>目标集群 <span style={{color: '#f44336'}}>*</span></span>
+            <CustomSelect
+              error={selectedClusterId === 0}
+              placeholder="请选择集群..."
+              value={String(selectedClusterId)}
+              onChange={(v) => setSelectedClusterId(Number(v))}
+              options={[
+                { value: '0', label: '请选择集群...' },
+                ...clusters.map(c => ({
+                  value: String(c.id),
+                  label: `${c.name}${c.status === 'connected' ? '' : ' (已断开)'}`,
+                })),
+              ]}
+            />
+          </div>
+
+          <div style={styles.fieldGroup}>
+            <span style={styles.fieldLabel}>命名空间 (Namespace)</span>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <CustomSelect
+                value={namespace}
+                onChange={(v) => setNamespace(v)}
+                options={[
+                  { value: '', label: '全部命名空间' },
+                  ...namespaces.map(ns => ({ value: ns, label: ns })),
+                ]}
+              />
+              <button style={styles.iconBtn} onClick={loadNamespaces} disabled={loadingNs}
+                title="刷新 Namespace">
+                {loadingNs ? '⏳' : '🔄'}
+              </button>
+            </div>
+          </div>
+
+          <div style={{ ...styles.fieldGroup, flex: 1.5 }}>
+            <span style={styles.fieldLabel}>标签选择 (Label Selector)</span>
+            <input style={styles.textInput} value={labelSelector}
+              onChange={(e) => setLabelSelector(e.target.value)}
+              placeholder="例如: app=nginx, tier=frontend" />
+          </div>
+
+          <div style={styles.toggleGroup}>
+            <button
+              style={{ ...styles.toggleBtn, ...(explain ? styles.toggleActive : {}) }}
+              onClick={() => setExplain(!explain)}>
+              🤖  AI 解释 {explain && '✓'}
+            </button>
+            <button
+              style={{ ...styles.toggleBtn, ...(withStats ? styles.toggleActive : {}) }}
+              onClick={() => setWithStats(!withStats)}>
+              📊  性能统计 {withStats && '✓'}
+            </button>
+            <button
+              style={{ ...styles.toggleBtn, ...(useCache ? styles.toggleActive : {}) }}
+              onClick={() => setUseCache(!useCache)}>
+              💾  启用缓存 {useCache && '✓'}
+            </button>
+            {useCache && (
+              <button style={{ ...styles.toggleBtn, color: '#f44336', borderColor: '#ffcdd2', background: '#ffebee' }}
+                onClick={handleInvalidateCache}>
+                🗑️ 清除缓存
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div style={{ height: '1px', background: '#f3f4f6', margin: '24px 0' }} />
+        
+        <div style={styles.filtersGrid}>
+          {/* 网络诊断 */}
           {filters.some(f => networkDiagFilters.includes(f)) && (
-            <div style={styles.filterGroup}>
-              <span style={styles.sectionLabel}>🌐 网络诊断</span>
+            <div style={styles.filterSection}>
+              <span style={styles.sectionTitle}>🌐 网络连接诊断</span>
               <div style={styles.filterChips}>
                 {filters.filter(f => networkDiagFilters.includes(f)).map(f => (
                   <button key={f}
                     style={{
-                      ...styles.diagChip,
-                      background: selectedFilters.includes(f) ? '#1976d2' : '#e3f2fd',
-                      color: selectedFilters.includes(f) ? 'white' : '#1565c0',
-                      border: selectedFilters.includes(f) ? 'none' : '1px solid #90caf9',
+                      ...styles.chip,
+                      ...(selectedFilters.includes(f) ? styles.chipActive : styles.chipInactive)
                     }}
                     onClick={() => toggleFilter(f)}>
                     {networkDiagLabels[f] || f}
@@ -154,18 +227,17 @@ function K8sGPTPage() {
               </div>
             </div>
           )}
-          {/* 诊断分析 - 核心诊断能力 */}
+          
+          {/* 故障分析 */}
           {filters.some(f => diagnosticFilters.includes(f)) && (
-            <div style={styles.filterGroup}>
-              <span style={styles.sectionLabel}>🔍 诊断分析</span>
+            <div style={styles.filterSection}>
+              <span style={styles.sectionTitle}>⚠️ 异常故障诊断</span>
               <div style={styles.filterChips}>
                 {filters.filter(f => diagnosticFilters.includes(f)).map(f => (
                   <button key={f}
                     style={{
-                      ...styles.diagChip,
-                      background: selectedFilters.includes(f) ? '#1976d2' : '#e3f2fd',
-                      color: selectedFilters.includes(f) ? 'white' : '#1565c0',
-                      border: selectedFilters.includes(f) ? 'none' : '1px solid #90caf9',
+                      ...styles.chip,
+                      ...(selectedFilters.includes(f) ? styles.chipActive : styles.chipInactive)
                     }}
                     onClick={() => toggleFilter(f)}>
                     {diagnosticLabels[f] || f}
@@ -174,18 +246,17 @@ function K8sGPTPage() {
               </div>
             </div>
           )}
-          {/* Traefik CRD 资源 */}
+          
+          {/* Traefik 资源 */}
           {filters.some(f => traefikFilters.includes(f) && !hiddenFilters.includes(f)) && (
-            <div style={styles.filterGroup}>
-              <span style={styles.sectionLabel}>🔀 Traefik CRD</span>
+            <div style={styles.filterSection}>
+              <span style={styles.sectionTitle}>🔀 Traefik 路由规则</span>
               <div style={styles.filterChips}>
                 {filters.filter(f => traefikFilters.includes(f) && !hiddenFilters.includes(f)).map(f => (
                   <button key={f}
                     style={{
-                      ...styles.diagChip,
-                      background: selectedFilters.includes(f) ? '#1976d2' : '#e3f2fd',
-                      color: selectedFilters.includes(f) ? 'white' : '#1565c0',
-                      border: selectedFilters.includes(f) ? 'none' : '1px solid #90caf9',
+                      ...styles.chip,
+                      ...(selectedFilters.includes(f) ? styles.chipActive : styles.chipInactive)
                     }}
                     onClick={() => toggleFilter(f)}>
                     {f}
@@ -194,17 +265,16 @@ function K8sGPTPage() {
               </div>
             </div>
           )}
-          {/* Kubernetes 核心资源 */}
-          <div style={styles.filterGroup}>
-            <span style={styles.sectionLabel}>☸ K8s 核心资源</span>
+          
+          {/* K8s核心资源 */}
+          <div style={styles.filterSection}>
+            <span style={styles.sectionTitle}>☸ K8s 工作负载及资源</span>
             <div style={styles.filterChips}>
               {filters.filter(f => !specialFilters.includes(f) && !hiddenFilters.includes(f)).map(f => (
                 <button key={f}
                   style={{
-                    ...styles.diagChip,
-                    background: selectedFilters.includes(f) ? '#1976d2' : '#e3f2fd',
-                    color: selectedFilters.includes(f) ? 'white' : '#1565c0',
-                    border: selectedFilters.includes(f) ? 'none' : '1px solid #90caf9',
+                     ...styles.chip,
+                     ...(selectedFilters.includes(f) ? styles.chipActive : styles.chipInactive)
                   }}
                   onClick={() => toggleFilter(f)}>
                   {f}
@@ -213,135 +283,69 @@ function K8sGPTPage() {
             </div>
           </div>
         </div>
-        {/* 操作栏 */}
-        <div style={styles.toolbar}>
-          {/* 第一行：集群 → NS → 标签 */}
-          <div style={styles.toolbarRow}>
-            <div style={styles.fieldGroup}>
-              <span style={styles.fieldLabel}>☸ 集群</span>
-              <select
-                style={{
-                  ...styles.toolbarSelect,
-                  borderColor: selectedClusterId === 0 ? '#f44336' : '#30363d',
-                }}
-                value={selectedClusterId}
-                onChange={(e) => setSelectedClusterId(Number(e.target.value))}
-              >
-                <option value={0}>请选择集群 *</option>
-                {clusters.map(c => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}{c.status === 'connected' ? '' : ' (断开)'}
-                  </option>
-                ))}
-              </select>
-            </div>
 
-            <span style={styles.separator}>›</span>
-
-            <div style={styles.fieldGroup}>
-              <span style={styles.fieldLabel}>📦 Namespace</span>
-              <div style={{ display: 'flex', gap: '4px' }}>
-                <select style={styles.toolbarSelect} value={namespace}
-                  onChange={(e) => setNamespace(e.target.value)}>
-                  <option value="">全部</option>
-                  {namespaces.map(ns => (
-                    <option key={ns} value={ns}>{ns}</option>
-                  ))}
-                </select>
-                <button style={styles.iconBtn} onClick={loadNamespaces} disabled={loadingNs}
-                  title="刷新 Namespace">
-                  {loadingNs ? '⏳' : '🔄'}
-                </button>
-              </div>
-            </div>
-
-            <span style={styles.separator}>›</span>
-
-            <div style={{ ...styles.fieldGroup, flex: 1 }}>
-              <span style={styles.fieldLabel}>🏷️ Label Selector</span>
-              <input style={styles.toolbarInput} value={labelSelector}
-                onChange={(e) => setLabelSelector(e.target.value)}
-                placeholder="app=nginx, tier=frontend" />
-            </div>
-          </div>
-
-          {/* 第二行：选项 + 开始分析 */}
-          <div style={styles.toolbarRow2}>
-            <div style={styles.toggleGroup}>
-              <button
-                style={{ ...styles.toggleBtn, ...(explain ? styles.toggleActive : {}) }}
-                onClick={() => setExplain(!explain)}>
-                🤖 AI 解释
-              </button>
-              <button
-                style={{ ...styles.toggleBtn, ...(withStats ? styles.toggleActive : {}) }}
-                onClick={() => setWithStats(!withStats)}>
-                📊 统计
-              </button>
-              <button
-                style={{ ...styles.toggleBtn, ...(useCache ? styles.toggleActive : {}) }}
-                onClick={() => setUseCache(!useCache)}>
-                💾 缓存
-              </button>
-              {useCache && (
-                <button style={{ ...styles.toggleBtn, color: '#f44336', borderColor: '#f44336' }}
-                  onClick={handleInvalidateCache}>
-                  🗑️ 清除缓存
-                </button>
-              )}
-            </div>
-            <button
-              style={{
-                ...styles.analyzeBtn2,
-                opacity: selectedClusterId === 0 ? 0.5 : 1,
-                cursor: selectedClusterId === 0 || analyzing ? 'not-allowed' : 'pointer',
-              }}
-              onClick={handleAnalyze}
-              disabled={analyzing || selectedClusterId === 0}>
-              {analyzing ? '⏳ 分析中...' : '▶ 开始分析'}
-            </button>
-          </div>
+        <div style={styles.actionRow}>
+          <button
+            style={{
+              ...styles.analyzeBtn,
+              opacity: selectedClusterId === 0 || selectedFilters.length === 0 || analyzing ? 0.6 : 1,
+              cursor: selectedClusterId === 0 || selectedFilters.length === 0 || analyzing ? 'not-allowed' : 'pointer',
+            }}
+            onClick={handleAnalyze}
+            disabled={analyzing || selectedClusterId === 0 || selectedFilters.length === 0}>
+            {analyzing ? '⏳ 正在进行深度分析...' : '▶ 执行集群诊断分析'}
+          </button>
         </div>
       </div>
 
-      {(results.length > 0 || rawJSON) && (
-        <div style={styles.resultSection}>
-          <h3 style={{ marginTop: 0 }}>分析结果 {problems > 0 && <span style={styles.problemBadge}>发现 {problems} 个问题</span>}</h3>
+      {/* 结果显示或空状态 */}
+      {(results.length > 0 || rawJSON) ? (
+        <div style={styles.resultCard}>
+          <div style={styles.resultHeaderMain}>
+            <h2 style={styles.resultTitle}>📋 诊断报告</h2>
+            {problems > 0 && <span style={styles.problemBadge}>发现 {problems} 项异常及隐患</span>}
+            {problems === 0 && <span style={styles.successBadge}>集群状态健康</span>}
+          </div>
+          
           {stats.length > 0 && (
-            <div style={{ marginBottom: '16px', padding: '12px', background: '#f5f5f5', borderRadius: '6px', fontSize: '13px' }}>
-              <strong>分析器耗时统计：</strong>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '6px' }}>
+            <div style={styles.statsBox}>
+              <strong>分析耗时统计：</strong>
+              <div style={styles.statsChips}>
                 {stats.map((s, i) => (
-                  <span key={i} style={{ padding: '2px 8px', background: '#e3f2fd', borderRadius: '4px' }}>
-                    {s.analyzer}: {s.duration}
+                  <span key={i} style={styles.statChip}>
+                    <span style={{color: '#666'}}>{s.analyzer}</span>
+                    <span style={{fontWeight: 600, color: 'var(--k8s-blue)', marginLeft: '4px'}}>{s.duration}</span>
                   </span>
                 ))}
               </div>
             </div>
           )}
+          
           {results.length > 0 ? (
             <div style={styles.resultList}>
               {results.map((result, index) => (
-                <div key={index} style={styles.resultCard}>
+                <div key={index} style={styles.resultItem}>
                   <div style={styles.resultHeader}>
                     <span style={styles.kindBadge}>{result.kind}</span>
                     <span style={styles.resultName}>{result.name}</span>
+                    {result.parentObject && (
+                       <span style={styles.parentObj}>所属：{result.parentObject}</span>
+                    )}
                   </div>
+                  
                   {result.error && result.error.length > 0 && (
                     <div style={styles.errorSection}>
-                      <strong>错误：</strong>
-                      {result.error.map((e, i) => <div key={i} style={styles.errorItem}>{e}</div>)}
+                      <div style={styles.sectionHeader}>⚠️ 发现问题</div>
+                      {result.error.map((e, i) => <div key={i} style={styles.errorItem}>• {e}</div>)}
                     </div>
                   )}
+                  
                   {result.details && (
                     <div style={styles.detailsSection}>
-                      <strong>AI 分析：</strong>
-                      <ReactMarkdown>{result.details}</ReactMarkdown>
-                    </div>
-                  )}
-                  {result.parentObject && (
-                    <div style={styles.parentObj}>
-                      <strong>父对象：</strong> {result.parentObject}
+                      <div style={styles.sectionHeader}>🤖 AI 修复建议</div>
+                      <div style={styles.markdownContent}>
+                        <ReactMarkdown>{result.details}</ReactMarkdown>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -349,16 +353,16 @@ function K8sGPTPage() {
             </div>
           ) : rawJSON ? (
             <div style={styles.rawSection}>
-              <strong>原始输出：</strong>
+              <div style={styles.sectionHeader}>原始分析输出</div>
               <pre style={styles.rawPre}>{rawJSON}</pre>
             </div>
           ) : null}
         </div>
-      )}
-
-      {analyzing && (
-        <div style={{ textAlign: 'center', padding: '24px', color: 'var(--k8s-text-muted)', fontSize: '13px' }}>
-          ⏳ 分析中，请稍候...
+      ) : (
+        <div style={styles.emptyState}>
+          <div style={styles.emptyIcon}>✨</div>
+          <h3 style={styles.emptyTitle}>等待执行分析</h3>
+          <p style={styles.emptyDesc}>请在上方选择目标集群和您希望诊断的资源类型，然后点击“执行集群诊断分析”获取健康报告。</p>
         </div>
       )}
     </div>
@@ -366,38 +370,361 @@ function K8sGPTPage() {
 }
 
 const styles: { [key: string]: React.CSSProperties } = {
-  analyzeSection: { background: 'var(--k8s-card-bg)', padding: '20px', borderRadius: 'var(--k8s-card-radius)', border: '1px solid var(--k8s-border)' },
-  filtersWrap: { display: 'flex', flexDirection: 'column' as const, gap: '14px' },
-  filterGroup: { display: 'flex', flexDirection: 'column' as const, gap: '6px' },
-  filterChips: { display: 'flex', flexWrap: 'wrap' as const, gap: '6px' },
-  sectionLabel: { fontSize: '12px', color: 'var(--k8s-blue)', fontWeight: 600 },
-  diagChip: { padding: '5px 12px', borderRadius: '3px', cursor: 'pointer', fontSize: '12px', transition: 'all 0.15s', fontWeight: 500 },
-  toolbar: { marginTop: '14px', background: '#0d1117', borderRadius: '6px', padding: '14px', display: 'flex', flexDirection: 'column' as const, gap: '10px' },
-  toolbarRow: { display: 'flex', alignItems: 'flex-end', gap: '10px', flexWrap: 'wrap' as const },
-  toolbarRow2: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap' as const, borderTop: '1px solid #21262d', paddingTop: '10px' },
-  fieldGroup: { display: 'flex', flexDirection: 'column' as const, gap: '3px' },
-  fieldLabel: { fontSize: '10px', color: '#8b949e', fontWeight: 500, letterSpacing: '0.5px', textTransform: 'uppercase' as const },
-  separator: { color: '#30363d', fontSize: '18px', marginBottom: '4px', userSelect: 'none' as const },
-  toolbarSelect: { padding: '6px 10px', background: '#161b22', border: '1px solid #30363d', borderRadius: '4px', color: '#c9d1d9', fontSize: '12px', cursor: 'pointer', outline: 'none', minWidth: '130px' },
-  toolbarInput: { padding: '6px 10px', background: '#161b22', border: '1px solid #30363d', borderRadius: '4px', color: '#c9d1d9', fontSize: '12px', outline: 'none', width: '100%', boxSizing: 'border-box' as const },
-  iconBtn: { padding: '5px 7px', background: '#161b22', border: '1px solid #30363d', borderRadius: '4px', cursor: 'pointer', fontSize: '13px', lineHeight: 1 },
-  toggleGroup: { display: 'flex', gap: '4px', flexWrap: 'wrap' as const },
-  toggleBtn: { padding: '5px 10px', background: '#161b22', border: '1px solid #30363d', borderRadius: '4px', color: '#8b949e', fontSize: '11px', cursor: 'pointer', transition: 'all 0.15s', fontWeight: 500 },
-  toggleActive: { background: '#1f6feb', borderColor: '#1f6feb', color: '#fff' },
-  analyzeBtn2: { padding: '8px 20px', background: 'linear-gradient(135deg, #238636, #2ea043)', color: 'white', border: 'none', borderRadius: '4px', fontSize: '13px', fontWeight: 600, letterSpacing: '0.3px', whiteSpace: 'nowrap' as const, cursor: 'pointer' },
-  resultSection: { background: 'var(--k8s-card-bg)', padding: '20px', borderRadius: 'var(--k8s-card-radius)', border: '1px solid var(--k8s-border)', marginTop: '16px' },
-  problemBadge: { fontSize: '13px', color: 'var(--k8s-danger)', fontWeight: 'normal' },
-  resultList: { display: 'grid', gap: '12px' },
-  resultCard: { border: '1px solid var(--k8s-border-light)', borderRadius: '4px', padding: '14px' },
-  resultHeader: { display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' },
-  kindBadge: { padding: '2px 10px', background: 'var(--k8s-blue-light)', color: 'var(--k8s-blue)', borderRadius: '3px', fontSize: '11px', fontWeight: 600 },
-  resultName: { fontSize: '14px', fontWeight: 500, color: 'var(--k8s-text-primary)' },
-  errorSection: { background: '#ffebee', padding: '10px 14px', borderRadius: '4px', marginBottom: '10px', fontSize: '13px' },
-  errorItem: { color: 'var(--k8s-danger)', marginTop: '3px' },
-  detailsSection: { background: '#f8f9fa', padding: '10px 14px', borderRadius: '4px', marginBottom: '10px', fontSize: '13px', lineHeight: '1.7' },
-  parentObj: { fontSize: '12px', color: 'var(--k8s-text-muted)' },
-  rawSection: { fontSize: '13px' },
-  rawPre: { background: '#f5f5f5', padding: '14px', borderRadius: '4px', overflow: 'auto', fontSize: '12px', maxHeight: '400px' },
+  container: {
+    maxWidth: '1200px',
+    margin: '0 auto',
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '20px',
+    paddingBottom: '40px',
+  },
+  topCard: {
+    background: '#ffffff',
+    padding: '24px',
+    borderRadius: '8px',
+    boxShadow: '0 2px 12px rgba(0,0,0,0.04)',
+    border: '1px solid #ebedf0',
+  },
+  middleCard: {
+    background: '#ffffff',
+    padding: '24px',
+    borderRadius: '8px',
+    boxShadow: '0 2px 12px rgba(0,0,0,0.04)',
+    border: '1px solid #ebedf0',
+  },
+  cardHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '20px',
+    flexWrap: 'wrap' as const,
+    gap: '16px',
+  },
+  cardTitle: {
+    margin: 0,
+    fontSize: '18px',
+    fontWeight: 600,
+    color: '#1f2937',
+  },
+  toolbarRow: {
+    display: 'flex',
+    gap: '20px',
+    flexWrap: 'nowrap' as const,
+    alignItems: 'flex-end',
+    marginTop: '16px',
+    overflowX: 'auto' as const,
+  },
+  fieldGroup: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '8px',
+    minWidth: '160px',
+    flex: 1,
+  },
+  fieldLabel: {
+    fontSize: '13px',
+    fontWeight: 600,
+    color: '#4b5563',
+  },
+  selectInput: {
+    padding: '10px 14px',
+    background: '#f9fafb',
+    border: '1px solid #d1d5db',
+    borderRadius: '6px',
+    fontSize: '14px',
+    color: '#111827',
+    width: '100%',
+    cursor: 'pointer',
+    outline: 'none',
+    transition: 'all 0.2s',
+    WebkitAppearance: 'none' as any,
+    MozAppearance: 'none' as any,
+    appearance: 'none' as any,
+    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E")`,
+    backgroundRepeat: 'no-repeat',
+    backgroundPosition: 'right 12px center',
+    paddingRight: '32px',
+  },
+  textInput: {
+    padding: '10px 14px',
+    background: '#f9fafb',
+    border: '1px solid #d1d5db',
+    borderRadius: '6px',
+    fontSize: '14px',
+    color: '#111827',
+    width: '100%',
+    outline: 'none',
+    transition: 'all 0.2s',
+  },
+  iconBtn: {
+    padding: '0 14px',
+    background: '#f9fafb',
+    border: '1.5px solid #d1d5db',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    transition: 'all 0.2s',
+  },
+  filtersGrid: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '24px',
+    paddingBottom: '24px',
+    borderBottom: '1px solid #f3f4f6',
+  },
+  filterSection: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '12px',
+  },
+  sectionTitle: {
+    fontSize: '14px',
+    fontWeight: 600,
+    color: '#374151',
+    display: 'flex',
+    alignItems: 'center',
+    marginBottom: '4px',
+  },
+  filterChips: {
+    display: 'flex',
+    flexWrap: 'wrap' as const,
+    gap: '10px',
+  },
+  chip: {
+    padding: '6px 16px',
+    borderRadius: '20px',
+    fontSize: '13px',
+    fontWeight: 500,
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+    userSelect: 'none' as const,
+    border: '1px solid transparent',
+  },
+  chipInactive: {
+    background: '#f3f4f6',
+    color: '#4b5563',
+    borderColor: '#e5e7eb',
+  },
+  chipActive: {
+    background: '#2563eb',
+    color: '#ffffff',
+    borderColor: '#2563eb',
+    boxShadow: '0 2px 8px rgba(37, 99, 235, 0.3)',
+    fontWeight: 600,
+  },
+  actionRow: {
+    display: 'flex',
+    justifyContent: 'flex-end',
+    marginTop: '24px',
+  },
+  toggleGroup: {
+    display: 'flex',
+    gap: '12px',
+    flexWrap: 'nowrap' as const,
+    alignItems: 'flex-end',
+    marginLeft: 'auto', // Pushes it to the right if there is extra space
+  },
+  toggleBtn: {
+    padding: '8px 16px',
+    background: '#ffffff',
+    border: '1px solid #d1d5db',
+    borderRadius: '6px',
+    color: '#4b5563',
+    fontSize: '13px',
+    fontWeight: 500,
+    cursor: 'pointer',
+    transition: 'all 0.2s',
+  },
+  toggleActive: {
+    background: '#f0fdf4',
+    borderColor: '#86efac',
+    color: '#166534',
+  },
+  analyzeBtn: {
+    padding: '12px 32px',
+    background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+    color: 'white',
+    border: 'none',
+    borderRadius: '6px',
+    fontSize: '15px',
+    fontWeight: 600,
+    cursor: 'pointer',
+    boxShadow: '0 4px 12px rgba(37, 99, 235, 0.2)',
+    transition: 'transform 0.1s, box-shadow 0.2s',
+  },
+  emptyState: {
+    background: '#ffffff',
+    borderRadius: '8px',
+    padding: '80px 20px',
+    border: '1px dashed #d1d5db',
+    display: 'flex',
+    flexDirection: 'column' as const,
+    alignItems: 'center',
+    justifyContent: 'center',
+    textAlign: 'center' as const,
+  },
+  emptyIcon: {
+    fontSize: '48px',
+    marginBottom: '16px',
+    background: '#f3f4f6',
+    width: '80px',
+    height: '80px',
+    borderRadius: '40px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyTitle: {
+    fontSize: '20px',
+    fontWeight: 600,
+    color: '#111827',
+    margin: '0 0 12px 0',
+  },
+  emptyDesc: {
+    fontSize: '14px',
+    color: '#6b7280',
+    maxWidth: '400px',
+    lineHeight: 1.6,
+  },
+  resultCard: {
+    background: '#ffffff',
+    padding: '24px',
+    borderRadius: '8px',
+    boxShadow: '0 2px 12px rgba(0,0,0,0.04)',
+    border: '1px solid #ebedf0',
+  },
+  resultHeaderMain: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '16px',
+    marginBottom: '20px',
+    paddingBottom: '16px',
+    borderBottom: '1px solid #f3f4f6',
+  },
+  resultTitle: {
+    margin: 0,
+    fontSize: '20px',
+    fontWeight: 600,
+    color: '#1f2937',
+  },
+  problemBadge: {
+    padding: '6px 16px',
+    background: '#fef2f2',
+    color: '#dc2626',
+    borderRadius: '20px',
+    fontSize: '14px',
+    fontWeight: 600,
+    border: '1px solid #fecaca',
+  },
+  successBadge: {
+    padding: '6px 16px',
+    background: '#f0fdf4',
+    color: '#166534',
+    borderRadius: '20px',
+    fontSize: '14px',
+    fontWeight: 600,
+    border: '1px solid #bbf7d0',
+  },
+  statsBox: {
+    background: '#f8fafc',
+    padding: '16px',
+    borderRadius: '8px',
+    marginBottom: '24px',
+    border: '1px solid #e2e8f0',
+    fontSize: '14px',
+  },
+  statsChips: {
+    display: 'flex',
+    flexWrap: 'wrap' as const,
+    gap: '12px',
+    marginTop: '12px',
+  },
+  statChip: {
+    background: '#ffffff',
+    padding: '6px 12px',
+    borderRadius: '6px',
+    border: '1px solid #e2e8f0',
+    fontSize: '13px',
+    boxShadow: '0 1px 2px rgba(0,0,0,0.02)',
+  },
+  resultList: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '20px',
+  },
+  resultItem: {
+    border: '1px solid #e5e7eb',
+    borderRadius: '8px',
+    padding: '20px',
+    transition: 'box-shadow 0.2s',
+  },
+  resultHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    marginBottom: '16px',
+    flexWrap: 'wrap' as const,
+  },
+  kindBadge: {
+    padding: '4px 12px',
+    background: '#e0e7ff',
+    color: '#4338ca',
+    borderRadius: '6px',
+    fontSize: '13px',
+    fontWeight: 600,
+  },
+  resultName: {
+    fontSize: '16px',
+    fontWeight: 600,
+    color: '#111827',
+  },
+  parentObj: {
+    fontSize: '13px',
+    color: '#6b7280',
+    borderLeft: '2px solid #e5e7eb',
+    paddingLeft: '12px',
+  },
+  sectionHeader: {
+    fontWeight: 600,
+    marginBottom: '8px',
+    fontSize: '14px',
+  },
+  errorSection: {
+    background: '#fef2f2',
+    padding: '16px',
+    borderRadius: '8px',
+    marginBottom: '16px',
+    border: '1px solid #fecaca',
+  },
+  errorItem: {
+    color: '#991b1b',
+    fontSize: '14px',
+    lineHeight: 1.6,
+    marginTop: '4px',
+  },
+  detailsSection: {
+    background: '#f8fafc',
+    padding: '16px',
+    borderRadius: '8px',
+    border: '1px solid #e2e8f0',
+  },
+  markdownContent: {
+    fontSize: '14px',
+    color: '#334155',
+    lineHeight: 1.7,
+  },
+  rawSection: {
+    background: '#f3f4f6',
+    padding: '16px',
+    borderRadius: '8px',
+  },
+  rawPre: {
+    margin: 0,
+    fontSize: '13px',
+    color: '#1f2937',
+    whiteSpace: 'pre-wrap' as const,
+    wordBreak: 'break-all' as const,
+  },
 };
 
 export default K8sGPTPage;
