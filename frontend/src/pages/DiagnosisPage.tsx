@@ -35,7 +35,8 @@ function DiagnosisPage() {
 
   const createSession = async () => {
     try {
-      const response = await diagnosisApi.createSession({ title: '新诊断会话' });
+      const chatNum = sessions.length + 1;
+      const response = await diagnosisApi.createSession({ title: `New Chat ${chatNum}` });
       const newSession = response.data;
       setSessions(prev => [newSession, ...prev]);
       setCurrentSession(newSession);

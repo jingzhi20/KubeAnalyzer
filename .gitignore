@@ -27,6 +27,7 @@ vendor/
 # Go build output
 backend/aiops-server
 agent/agent
+agent/aiops-agent
 
 # Node / Frontend
 node_modules/
