@@ -1,12 +1,11 @@
-import { useState, useMemo, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import {
-  ChevronRight,
-  ChevronLeft,
   MoreHorizontal,
   CheckCircle2,
   AlertTriangle,
   XCircle,
   Loader2,
+  CalendarDays,
 } from 'lucide-react';
 
 /* ── Types ── */
@@ -38,7 +37,6 @@ interface InspectionDetail {
 /* ── Static data ── */
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const HOURS = Array.from({ length: 12 }, (_, i) => i + 6); // 06:00 – 17:00
-const FILTERS = ['All', 'Completed', 'Warning', 'Failed', 'Running'];
 
 const MOCK_EVENTS: InspectionEvent[] = [
   {
@@ -186,8 +184,11 @@ const statusLabel = (s: InspectionStatus) =>
 const HOUR_HEIGHT = 80; // px per hour row
 
 function HomePage() {
-  const [activeFilter, setActiveFilter] = useState('All');
-  const [currentDay] = useState(2); // Tuesday highlighted
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const today = new Date();
+    return today.toISOString().slice(0, 10); // 'YYYY-MM-DD'
+  });
+  const [currentDay, setCurrentDay] = useState(2);
   const [selectedEvent, setSelectedEvent] = useState<InspectionEvent | null>(null);
   const [timeLine, setTimeLine] = useState<{ hour: number; min: number } | null>({ hour: 8, min: 40 });
   const gridRef = useRef<HTMLDivElement>(null);
@@ -208,48 +209,28 @@ function HomePage() {
     ? (timeLine.hour - 6) * HOUR_HEIGHT + (timeLine.min / 60) * HOUR_HEIGHT
     : 0;
 
-  const filteredEvents = useMemo(() => {
-    if (activeFilter === 'All') return MOCK_EVENTS;
-    const key = activeFilter.toLowerCase() as InspectionStatus;
-    return MOCK_EVENTS.filter((e) => e.status === key);
-  }, [activeFilter]);
+  const filteredEvents = MOCK_EVENTS;
 
   return (
     <div className="min-h-full">
-      {/* Title + Filters */}
-      <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
-        <div className="flex items-center gap-3">
-          <button className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 hover:bg-gray-100 transition-colors">
-            <ChevronLeft size={16} />
-          </button>
-          <h1 className="text-2xl font-semibold text-gray-800 tracking-tight">
-            01-07 January 2025
-          </h1>
-          <button className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 hover:bg-gray-100 transition-colors">
-            <ChevronRight size={16} />
-          </button>
-        </div>
-
-        <div className="flex items-center gap-2 flex-wrap">
-          {FILTERS.map((f) => (
-            <button
-              key={f}
-              onClick={() => setActiveFilter(f)}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${
-                activeFilter === f
-                  ? 'bg-gray-900 text-white shadow-md'
-                  : 'bg-white text-gray-500 hover:bg-gray-100 border border-gray-200'
-              }`}
-            >
-              {activeFilter === f && f === 'All' && (
-                <CheckCircle2 size={14} className="inline mr-1.5 -mt-0.5" />
-              )}
-              {f}
-            </button>
-          ))}
-          <button className="px-4 py-1.5 rounded-full text-sm font-medium bg-white text-gray-500 hover:bg-gray-100 border border-gray-200 transition-all duration-200">
-            This week
-          </button>
+      {/* Date picker */}
+      <div className="mb-6">
+        <div className="relative inline-flex items-center gap-2">
+          <CalendarDays size={18} className="text-gray-500" />
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => {
+              setSelectedDate(e.target.value);
+              if (e.target.value) {
+                const d = new Date(e.target.value);
+                // getDay(): 0=Sun, convert to 1=Mon..7=Sun
+                const day = d.getDay() === 0 ? 7 : d.getDay();
+                setCurrentDay(day);
+              }
+            }}
+            className="px-4 py-2 rounded-xl border border-gray-200 bg-white text-sm text-gray-700 font-medium shadow-sm hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-300 transition-all cursor-pointer"
+          />
         </div>
       </div>
 
@@ -264,10 +245,11 @@ function HomePage() {
             return (
               <div
                 key={day}
-                className={`py-3 text-center text-sm font-medium transition-colors ${
+                onClick={() => setCurrentDay(dayNum)}
+                className={`py-3 text-center text-sm font-medium transition-colors cursor-pointer select-none ${
                   isToday
                     ? 'bg-gray-900 text-white rounded-t-xl'
-                    : 'text-gray-400'
+                    : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600'
                 }`}
               >
                 {dayNum} - {day}
