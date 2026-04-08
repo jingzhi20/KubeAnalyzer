@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { kubectlAiApi } from '../api';
 import type { KubectlAIHistory } from '../types';
+import { Settings } from 'lucide-react';
 
 const DEFAULT_EXAMPLES = [
   '列出所有 namespace 中状态异常的 Pod',
@@ -116,29 +117,30 @@ function KubectlAIPage() {
 
   return (
     <div style={styles.container}>
-      <div style={styles.sidebar}>
-        <div style={styles.sidebarHeader}>
-          <h3 style={{ margin: 0, fontSize: '16px' }}>历史记录</h3>
-        </div>
-        <div style={styles.historyList}>
-          {history.length === 0 && <div style={styles.noHistory}>暂无历史记录</div>}
-          {history.map(item => (
-            <div key={item.id} style={styles.historyItem} onClick={() => handleHistoryClick(item)}>
-              <div style={styles.historyPrompt}>{item.prompt}</div>
-              <div style={styles.historyCommand}>{item.command}</div>
-              <div style={styles.historyTime}>{new Date(item.created_at).toLocaleString()}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div style={styles.main}>
-        <div style={styles.header}>
+      <div style={styles.leftCol}>
+        <div style={styles.headerRow}>
           <h1 style={styles.title}>智能命令助手</h1>
-          <button style={styles.configBtn} onClick={() => { if (!showConfig) loadConfig(); setShowConfig(!showConfig); }}>
-            {showConfig ? '关闭配置' : '配置'}
+          <button
+            style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: '10px',
+              background: 'white',
+              border: '1px solid #e5e7eb',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 0.2s',
+            }}
+            onClick={() => { if (!showConfig) loadConfig(); setShowConfig(!showConfig); }}
+            title={showConfig ? '关闭配置' : '配置'}
+          >
+            <Settings size={16} style={{ color: showConfig ? 'var(--k8s-blue)' : '#6b7280' }} />
           </button>
         </div>
+        <div style={styles.main}>
 
         {showConfig && (
           <div style={styles.configSection}>
@@ -173,12 +175,12 @@ function KubectlAIPage() {
         <div style={styles.inputSection}>
           <div style={styles.modeSwitch}>
             <button
-              style={{ ...styles.modeBtn, ...(mode === 'generate' ? styles.modeBtnActive : {}) }}
+              style={{ ...styles.modeBtn, borderRadius: '12px 0 0 12px', ...(mode === 'generate' ? styles.modeBtnActive : {}) }}
               onClick={() => setMode('generate')}>
               仅生成命令
             </button>
             <button
-              style={{ ...styles.modeBtn, ...(mode === 'execute' ? styles.modeBtnActive : {}) }}
+              style={{ ...styles.modeBtn, borderRadius: '0 12px 12px 0', ...(mode === 'execute' ? styles.modeBtnActive : {}) }}
               onClick={() => setMode('execute')}>
               生成并执行
             </button>
@@ -309,47 +311,68 @@ function KubectlAIPage() {
           </div>
         )}
       </div>
+      </div>
+
+      {/* 右侧历史记录 */}
+      <div style={styles.rightCol}>
+        <h3 style={styles.sideTitle}>历史记录</h3>
+        <div style={styles.sidebar}>
+          <div style={styles.historyList}>
+            {history.length === 0 && <div style={styles.noHistory}>暂无历史记录</div>}
+            {history.map(item => (
+              <div key={item.id} style={styles.historyItem} onClick={() => handleHistoryClick(item)}>
+                <div style={styles.historyPrompt}>{item.prompt}</div>
+                <div style={styles.historyCommand}>{item.command}</div>
+                <div style={styles.historyTime}>{new Date(item.created_at).toLocaleString()}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
 
 const styles: { [key: string]: React.CSSProperties } = {
-  container: { display: 'flex', gap: '16px', height: 'calc(100vh - 100px)' },
-  sidebar: { width: '260px', background: 'var(--k8s-card-bg)', borderRadius: 'var(--k8s-card-radius)', border: '1px solid var(--k8s-border)', display: 'flex', flexDirection: 'column', overflow: 'hidden' },
-  sidebarHeader: { padding: '14px 16px', borderBottom: '1px solid var(--k8s-border-light)' },
-  historyList: { flex: 1, overflow: 'auto', padding: '6px' },
+  container: { display: 'flex', gap: '20px', height: 'calc(100vh - 100px)' },
+  leftCol: { flex: 6, display: 'flex', flexDirection: 'column' as const },
+  headerRow: { display: 'flex', alignItems: 'center', marginBottom: '16px', gap: '12px' },
+  rightCol: { flex: 4, display: 'flex', flexDirection: 'column' as const },
+  sideTitle: { margin: '0 0 16px 0', fontSize: '20px', fontWeight: 600, color: 'var(--k8s-text-primary)' },
+  main: { flex: 1, display: 'flex', flexDirection: 'column' as const, gap: '16px', overflow: 'auto' },
+  sidebar: { flex: 1, background: 'var(--k8s-card-bg)', borderRadius: '16px', border: '1px solid var(--k8s-border)', display: 'flex', flexDirection: 'column' as const, overflow: 'hidden' },
+  historyList: { flex: 1, overflow: 'auto', padding: '10px' },
   noHistory: { textAlign: 'center' as const, padding: '24px', color: 'var(--k8s-text-muted)', fontSize: '13px' },
-  historyItem: { padding: '10px 12px', borderRadius: '4px', cursor: 'pointer', marginBottom: '4px', border: '1px solid var(--k8s-border-light)', transition: 'border-color 0.15s' },
+  historyItem: { padding: '10px 12px', borderRadius: '12px', cursor: 'pointer', marginBottom: '4px', border: '1px solid var(--k8s-border-light)', transition: 'border-color 0.15s' },
   historyPrompt: { fontSize: '13px', color: 'var(--k8s-text-primary)', marginBottom: '3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const },
   historyCommand: { fontSize: '11px', color: 'var(--k8s-blue)', fontFamily: 'var(--k8s-mono)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const },
   historyTime: { fontSize: '10px', color: 'var(--k8s-text-muted)', marginTop: '3px' },
-  main: { flex: 1, display: 'flex', flexDirection: 'column', gap: '16px', overflow: 'auto' },
-  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
+  header: { display: 'none' },
   title: { fontSize: '20px', fontWeight: 600, color: 'var(--k8s-text-primary)', margin: 0 },
   configBtn: { padding: '6px 14px', background: 'var(--k8s-card-bg)', border: '1px solid var(--k8s-border)', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' },
-  configSection: { background: 'var(--k8s-card-bg)', padding: '20px', borderRadius: 'var(--k8s-card-radius)', border: '1px solid var(--k8s-border)' },
+  configSection: { background: 'var(--k8s-card-bg)', padding: '20px', borderRadius: '16px', border: '1px solid var(--k8s-border)' },
   configGrid: { display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '14px' },
   label: { display: 'block', fontSize: '12px', color: 'var(--k8s-text-secondary)', marginBottom: '4px' },
   input: { width: '100%', padding: '8px 10px', border: '1px solid var(--k8s-border)', borderRadius: '4px', fontSize: '13px', boxSizing: 'border-box' as const, outline: 'none' },
   saveBtn: { padding: '8px 20px', background: 'var(--k8s-blue)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '13px', fontWeight: 500 },
-  inputSection: { background: 'var(--k8s-card-bg)', padding: '20px', borderRadius: 'var(--k8s-card-radius)', border: '1px solid var(--k8s-border)' },
+  inputSection: { background: 'var(--k8s-card-bg)', padding: '20px', borderRadius: '16px', border: '1px solid var(--k8s-border)' },
   modeSwitch: { display: 'flex', gap: '0', marginBottom: '14px' },
-  modeBtn: { padding: '7px 16px', background: '#f5f5f5', border: '1px solid var(--k8s-border)', cursor: 'pointer', fontSize: '13px', color: 'var(--k8s-text-secondary)' },
+  modeBtn: { padding: '7px 16px', background: '#f5f5f5', border: '1px solid var(--k8s-border)', cursor: 'pointer', fontSize: '13px', color: 'var(--k8s-text-secondary)', borderRadius: '0' },
   modeBtnActive: { background: 'var(--k8s-blue)', color: 'white', borderColor: 'var(--k8s-blue)' },
   inputRow: { display: 'flex', gap: '10px' },
-  promptInput: { flex: 1, padding: '8px 12px', border: '1px solid var(--k8s-border)', borderRadius: '4px', fontSize: '13px', outline: 'none' },
-  submitBtn: { padding: '8px 24px', background: 'var(--k8s-blue)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '13px', whiteSpace: 'nowrap' as const, fontWeight: 500 },
-  resultSection: { background: 'var(--k8s-card-bg)', padding: '20px', borderRadius: 'var(--k8s-card-radius)', border: '1px solid var(--k8s-border)' },
-  commandBlock: { display: 'flex', alignItems: 'center', background: '#1e1e1e', padding: '12px 14px', borderRadius: '4px', gap: '10px' },
+  promptInput: { flex: 1, padding: '10px 14px', border: '1px solid var(--k8s-border)', borderRadius: '12px', fontSize: '13px', outline: 'none' },
+  submitBtn: { padding: '10px 24px', background: 'var(--k8s-blue)', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', fontSize: '13px', whiteSpace: 'nowrap' as const, fontWeight: 500 },
+  resultSection: { background: 'var(--k8s-card-bg)', padding: '20px', borderRadius: '16px', border: '1px solid var(--k8s-border)' },
+  commandBlock: { display: 'flex', alignItems: 'center', background: '#1e1e1e', padding: '12px 14px', borderRadius: '10px', gap: '10px' },
   commandCode: { flex: 1, color: '#4ec9b0', fontSize: '13px', fontFamily: 'var(--k8s-mono)', wordBreak: 'break-all' as const },
   copyBtn: { padding: '4px 12px', background: '#333', color: '#fff', border: 'none', borderRadius: '3px', cursor: 'pointer', fontSize: '11px' },
-  outputSection: { background: 'var(--k8s-card-bg)', padding: '20px', borderRadius: 'var(--k8s-card-radius)', border: '1px solid var(--k8s-border)' },
-  outputPre: { background: '#f5f5f5', padding: '14px', borderRadius: '4px', fontSize: '12px', fontFamily: 'var(--k8s-mono)', overflow: 'auto', maxHeight: '400px', lineHeight: '1.5' },
-  emptyState: { textAlign: 'center' as const, padding: '36px', color: 'var(--k8s-text-muted)', background: 'var(--k8s-card-bg)', borderRadius: 'var(--k8s-card-radius)', border: '1px solid var(--k8s-border)', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' },
+  outputSection: { background: 'var(--k8s-card-bg)', padding: '20px', borderRadius: '16px', border: '1px solid var(--k8s-border)' },
+  outputPre: { background: '#f5f5f5', padding: '14px', borderRadius: '10px', fontSize: '12px', fontFamily: 'var(--k8s-mono)', overflow: 'auto', maxHeight: '400px', lineHeight: '1.5' },
+  emptyState: { textAlign: 'center' as const, padding: '36px', color: 'var(--k8s-text-muted)', background: 'var(--k8s-card-bg)', borderRadius: '16px', border: '1px solid var(--k8s-border)', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' },
   examples: { marginTop: '20px', textAlign: 'left' as const, maxWidth: '480px' },
   exampleTitle: { fontSize: '13px', color: 'var(--k8s-text-secondary)', marginBottom: '6px' },
   exampleList: { display: 'flex', flexDirection: 'column', gap: '6px' },
-  exampleBtn: { padding: '8px 14px', background: '#f8f9fa', border: '1px solid var(--k8s-border-light)', borderRadius: '4px', cursor: 'pointer', textAlign: 'left' as const, fontSize: '13px', color: 'var(--k8s-text-secondary)', transition: 'border-color 0.15s' },
+  exampleBtn: { padding: '8px 14px', background: '#f8f9fa', border: '1px solid var(--k8s-border-light)', borderRadius: '10px', cursor: 'pointer', textAlign: 'left' as const, fontSize: '13px', color: 'var(--k8s-text-secondary)', transition: 'border-color 0.15s' },
 };
 
 export default KubectlAIPage;

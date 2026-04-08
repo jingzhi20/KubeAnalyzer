@@ -134,10 +134,8 @@ function K8sGPTPage() {
   return (
     <div style={styles.container}>
       {/* 核心配置区域 */}
+      <h2 style={styles.cardTitle}>诊断范围</h2>
       <div style={styles.topCard}>
-        <div style={styles.cardHeader}>
-          <h2 style={styles.cardTitle}>🔍 诊断范围选择</h2>
-        </div>
         <div style={styles.toolbarRow}>
           <div style={styles.fieldGroup}>
             <span style={styles.fieldLabel}>目标集群 <span style={{color: '#f44336'}}>*</span></span>

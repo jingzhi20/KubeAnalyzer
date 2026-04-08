@@ -70,7 +70,7 @@ function UserManagementPage() {
   };
 
   return (
-    <div style={styles.container}>
+    <div>
       <div style={styles.header}>
         <h1 style={styles.title}>用户管理</h1>
         <button style={styles.createBtn} onClick={() => setShowCreateModal(true)}>
@@ -81,6 +81,7 @@ function UserManagementPage() {
       {loading ? (
         <div style={styles.loading}>加载中...</div>
       ) : (
+        <div style={styles.tableCard}>
         <table style={styles.table}>
           <thead>
             <tr>
@@ -129,6 +130,7 @@ function UserManagementPage() {
             ))}
           </tbody>
         </table>
+        </div>
       )}
 
       {/* Create User Modal */}
@@ -199,6 +201,8 @@ function UserManagementPage() {
 
 const styles: { [key: string]: React.CSSProperties } = {
   container: {
+  },
+  tableCard: {
     background: 'var(--k8s-card-bg)',
     borderRadius: 'var(--k8s-card-radius)',
     padding: '20px',
