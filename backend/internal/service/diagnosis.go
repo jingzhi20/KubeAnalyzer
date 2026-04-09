@@ -98,39 +98,78 @@ func (s *DiagnosisService) RenameSession(sessionID uint, userID uint, title stri
 // intentPrompt is the system prompt for intent recognition and command generation.
 const intentPrompt = `你是一个 Kubernetes 运维 AI 助手。用户会用自然语言提问关于集群的问题。
 
-你的任务是判断用户的问题是否需要查询集群数据。如果需要，生成对应的 kubectl 命令。
+你的任务是判断用户的问题是否需要查询集群数据。如果需要，从下面的命令模板中选择合适的命令。
+
+## 可用命令模板（只能从中选择，不能自创参数）：
+
+kubectl version
+kubectl cluster-info
+kubectl get nodes
+kubectl get nodes -o wide
+kubectl top nodes
+kubectl top pods -A
+kubectl top pods -n <namespace>
+kubectl get pods -A
+kubectl get pods -n <namespace>
+kubectl get pods -n <namespace> -o wide
+kubectl get namespaces
+kubectl get services -A
+kubectl get services -n <namespace>
+kubectl get deployments -A
+kubectl get deployments -n <namespace>
+kubectl get statefulsets -A
+kubectl get daemonsets -A
+kubectl get jobs -A
+kubectl get cronjobs -A
+kubectl get ingress -A
+kubectl get configmaps -n <namespace>
+kubectl get secrets -n <namespace>
+kubectl get pv
+kubectl get pvc -A
+kubectl get events -A --sort-by=.lastTimestamp
+kubectl get events -n <namespace> --sort-by=.lastTimestamp
+kubectl describe node <node-name>
+kubectl describe pod <pod-name> -n <namespace>
+kubectl describe deployment <name> -n <namespace>
+kubectl describe service <name> -n <namespace>
+kubectl logs <pod-name> -n <namespace> --tail=100
+kubectl get hpa -A
+kubectl get networkpolicy -A
+kubectl api-resources
+
+## 规则：
+1. 只能使用上面列出的命令模板，将 <namespace>、<pod-name> 等占位符替换为用户提到的实际值
+2. 如果用户没有指定 namespace，使用 -A（全部命名空间）
+3. 如果需要统计、排序、对比，用简单命令获取原始数据，由 AI 在回答阶段分析
+4. 最多生成 3 条命令
+5. 概念性问题、最佳实践等不需要查询集群的问题，need_query=false
+6. 如果用户在追问之前的回答，根据上下文判断是否需要重新查询
 
 请严格按以下 JSON 格式回复（不要包含其他内容）：
 {
   "need_query": true/false,
   "commands": ["kubectl ..."],
-  "reason": "简要说明为什么需要/不需要查询"
+  "reason": "简要说明"
 }
-
-规则：
-1. 如果用户问的是集群状态、资源信息、版本、日志等需要实际数据的问题，need_query=true
-2. 如果用户问的是概念性问题、最佳实践、配置建议等不需要实时数据的问题，need_query=false
-3. 如果用户在评价或追问之前的回答（如"不对"、"错了"、"再查一下"），根据上下文判断是否需要重新查询
-4. commands 数组可以包含多条命令（最多3条），按需生成
-5. 只生成只读命令（get/describe/logs/top/version/api-resources），不要生成写操作
-6. 命令不要包含 --kubeconfig 或 --context 参数
-7. 不要使用已废弃的参数（如 kubectl version 不要加 --short）
 
 示例：
 用户：集群版本是多少？
-{"need_query":true,"commands":["kubectl version"],"reason":"需要查询集群版本信息"}
+{"need_query":true,"commands":["kubectl version"],"reason":"查询集群版本"}
 
-用户：所有 Pod 状态怎么样？
-{"need_query":true,"commands":["kubectl get pods --all-namespaces"],"reason":"需要查看所有Pod状态"}
+用户：哪个 namespace 的 pod 最多？
+{"need_query":true,"commands":["kubectl get pods -A"],"reason":"获取全部 Pod，由 AI 统计"}
+
+用户：kube-system 下有哪些 pod？
+{"need_query":true,"commands":["kubectl get pods -n kube-system"],"reason":"查看指定命名空间的 Pod"}
 
 用户：什么是 DaemonSet？
-{"need_query":false,"commands":[],"reason":"概念性问题，不需要查询集群"}
+{"need_query":false,"commands":[],"reason":"概念性问题"}
 
-用户：节点资源使用情况如何？
-{"need_query":true,"commands":["kubectl top nodes","kubectl get nodes -o wide"],"reason":"需要查看节点资源使用和状态"}
+用户：节点资源使用情况？
+{"need_query":true,"commands":["kubectl top nodes","kubectl get nodes -o wide"],"reason":"查看节点资源"}
 
 用户：上一个回答不对
-{"need_query":false,"commands":[],"reason":"用户在评价之前的回答，不需要新查询"}`
+{"need_query":false,"commands":[],"reason":"用户在评价之前的回答"}`
 
 // intentResult represents the LLM's intent recognition result.
 type intentResult struct {
@@ -168,7 +207,11 @@ func (s *DiagnosisService) SubmitQuery(sessionID uint, userID uint, question str
 
 	// Load conversation history for multi-turn context
 	var prevRecords []model.DiagnosisRecord
-	database.DB.Where("session_id = ?", sessionID).Order("created_at asc").Limit(10).Find(&prevRecords)
+	database.DB.Where("session_id = ?", sessionID).Order("created_at desc").Limit(10).Find(&prevRecords)
+	// Reverse to chronological order for LLM context
+	for i, j := 0, len(prevRecords)-1; i < j; i, j = i+1, j-1 {
+		prevRecords[i], prevRecords[j] = prevRecords[j], prevRecords[i]
+	}
 
 	// Step 1: Intent recognition — ask LLM if we need to query the cluster
 	intent := s.recognizeIntent(question, llmConf, prevRecords)
@@ -177,6 +220,9 @@ func (s *DiagnosisService) SubmitQuery(sessionID uint, userID uint, question str
 	clusterData := ""
 	if intent.NeedQuery && len(intent.Commands) > 0 {
 		clusterData = s.executeCommands(intent.Commands)
+	} else if intent.NeedQuery {
+		// Commands were empty or all filtered — hint LLM to answer from knowledge
+		clusterData = "[无可用查询命令，请基于专业知识回答]"
 	}
 
 	// Step 3: Build final LLM messages with conversation history + cluster data
@@ -184,9 +230,10 @@ func (s *DiagnosisService) SubmitQuery(sessionID uint, userID uint, question str
 		{Role: "system", Content: `你是一个 Kubernetes 运维专家 AI 助手。请遵循以下规则：
 1. 回答要简洁精炼，直接给出结论，避免冗长的解释
 2. 如果有集群查询结果，基于实际数据回答，直接呈现关键信息
-3. 如果查询失败（如 Agent 离线），用一两句话说明原因即可，不要长篇大论教用户怎么修
+3. 如果查询失败或数据不完整，尝试用你的专业知识回答用户问题，不要只说"查询失败"就结束
 4. 使用 Markdown 格式化输出，善用表格、代码块展示数据
-5. 不要重复用户的问题，不要说"根据查询结果"之类的废话，直接给答案`},
+5. 不要重复用户的问题，不要说"根据查询结果"之类的废话，直接给答案
+6. 如果需要统计、排序、汇总，直接分析原始数据并给出结果`},
 	}
 
 	// Add conversation history
@@ -269,6 +316,10 @@ func (s *DiagnosisService) recognizeIntent(question string, llmConf llmclient.LL
 	for _, cmd := range result.Commands {
 		if len(safeCommands) >= 3 {
 			break
+		}
+		// Reject commands with shell operators (pipes, redirects, subshells)
+		if strings.ContainsAny(cmd, "|>&;$`") {
+			continue
 		}
 		if isReadOnlyCommand(cmd) {
 			safeCommands = append(safeCommands, cmd)

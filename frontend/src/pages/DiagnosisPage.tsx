@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { diagnosisApi } from '../api';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import type { DiagnosisSession, DiagnosisRecord } from '../types';
-import { Trash2, Pencil, Check, X } from 'lucide-react';
+import { Trash2, Pencil, Check, X, SquarePen, Search } from 'lucide-react';
+import './DiagnosisPage.css';
 
 function DiagnosisPage() {
   const [sessions, setSessions] = useState<DiagnosisSession[]>([]);
@@ -14,7 +16,11 @@ function DiagnosisPage() {
   const [renamingId, setRenamingId] = useState<number | null>(null);
   const [renameValue, setRenameValue] = useState('');
   const [hoveredId, setHoveredId] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSearch, setShowSearch] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const pendingQuestion = useRef('');
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     loadSessions();
@@ -23,6 +29,10 @@ function DiagnosisPage() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [records]);
+
+  useEffect(() => {
+    if (showSearch) searchInputRef.current?.focus();
+  }, [showSearch]);
 
   const loadSessions = async () => {
     try {
@@ -33,15 +43,19 @@ function DiagnosisPage() {
     }
   };
 
+  const filteredSessions = searchQuery.trim()
+    ? sessions.filter(s => s.title.toLowerCase().includes(searchQuery.toLowerCase()))
+    : sessions;
+
   const createSession = async () => {
     try {
-      const chatNum = sessions.length + 1;
-      const response = await diagnosisApi.createSession({ title: `New Chat ${chatNum}` });
+      const response = await diagnosisApi.createSession({ title: '新对话' });
       const newSession = response.data;
-      setSessions(prev => [newSession, ...prev]);
       setCurrentSession(newSession);
       setRecords([]);
       setErrorInfo(null);
+      setShowSearch(false);
+      setSearchQuery('');
     } catch (err) {
       console.error('Failed to create session:', err);
     }
@@ -95,12 +109,21 @@ function DiagnosisPage() {
 
   const submitQuery = async () => {
     if (!currentSession || !question.trim()) return;
+    const currentQuestion = question.trim();
+    setQuestion('');
+    pendingQuestion.current = currentQuestion;
     setLoading(true);
     setErrorInfo(null);
     try {
-      const response = await diagnosisApi.submitQuery(currentSession.id, { question });
+      const response = await diagnosisApi.submitQuery(currentSession.id, { question: currentQuestion });
       setRecords(prev => [...prev, response.data]);
-      setQuestion('');
+      if (records.length === 0) {
+        const title = currentQuestion.slice(0, 20) + (currentQuestion.length > 20 ? '...' : '');
+        diagnosisApi.renameSession(currentSession.id, title).catch(() => {});
+        const namedSession = { ...currentSession, title };
+        setSessions(prev => [namedSession, ...prev]);
+        setCurrentSession(namedSession);
+      }
     } catch (err: any) {
       const errData = err.response?.data?.error;
       setErrorInfo({
@@ -116,9 +139,32 @@ function DiagnosisPage() {
     <div style={styles.container}>
       {/* 左侧会话列表 */}
       <div style={styles.sidebar}>
-        <button style={styles.newBtn} onClick={createSession}>+ 新建会话</button>
+        <div style={styles.sidebarHeader}>
+          <button style={styles.headerBtn} onClick={createSession} title="新聊天">
+            <SquarePen size={16} />
+            <span>新聊天</span>
+          </button>
+        </div>
+        <button
+          style={{ ...styles.headerBtn, marginBottom: '10px' , color: showSearch ? 'var(--k8s-blue)' : undefined }}
+          onClick={() => { setShowSearch(!showSearch); if (showSearch) setSearchQuery(''); }}
+          title="搜索聊天"
+        >
+          <Search size={16} />
+          <span>搜索聊天</span>
+        </button>
+        {showSearch && (
+          <input
+            ref={searchInputRef}
+            style={styles.searchInput}
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder="搜索聊天记录..."
+            onKeyDown={e => { if (e.key === 'Escape') { setShowSearch(false); setSearchQuery(''); } }}
+          />
+        )}
         <div style={styles.sessionList}>
-          {sessions.map(session => {
+          {filteredSessions.map(session => {
             const isActive = currentSession?.id === session.id;
             const isHovered = hoveredId === session.id;
             return (
@@ -174,6 +220,11 @@ function DiagnosisPage() {
               </div>
             );
           })}
+          {searchQuery && filteredSessions.length === 0 && (
+            <div style={{ padding: '12px', color: 'var(--k8s-text-muted)', fontSize: 12, textAlign: 'center' }}>
+              未找到匹配的会话
+            </div>
+          )}
         </div>
       </div>
 
@@ -190,11 +241,13 @@ function DiagnosisPage() {
                   <div style={styles.question}>{record.question}</div>
                   <div style={styles.answer}>
                     {record.llm_available ? (
-                      <ReactMarkdown>{record.llm_response}</ReactMarkdown>
+                      <div className="markdown-body">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{record.llm_response}</ReactMarkdown>
+                      </div>
                     ) : (
                       <div style={styles.warning}>
                         LLM 分析不可用，显示原始数据：
-                        <pre style={{ marginTop: 8, fontSize: 12 }}>{record.grpc_response}</pre>
+                        <pre style={{ marginTop: 8, fontSize: 12, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{record.grpc_response}</pre>
                       </div>
                     )}
                   </div>
@@ -202,7 +255,7 @@ function DiagnosisPage() {
               ))}
               {loading && (
                 <div style={styles.messageGroup}>
-                  <div style={styles.question}>{question}</div>
+                  <div style={styles.question}>{pendingQuestion.current}</div>
                   <div style={{ ...styles.answer, color: 'var(--k8s-text-muted)', fontStyle: 'italic' }}>
                     正在分析集群数据，请稍候...
                   </div>
@@ -229,7 +282,7 @@ function DiagnosisPage() {
                 style={styles.input}
                 value={question}
                 onChange={(e) => setQuestion(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && submitQuery()}
+                onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}
                 placeholder="输入您的诊断问题..."
                 disabled={loading}
               />
@@ -261,17 +314,35 @@ const styles: { [key: string]: React.CSSProperties } = {
     display: 'flex',
     flexDirection: 'column',
   },
-  newBtn: {
-    width: '100%',
-    padding: '9px',
-    background: 'var(--k8s-blue)',
-    color: 'white',
+  sidebarHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: '12px',
+    padding: '0 2px',
+  },
+  headerBtn: {
+    background: 'none',
     border: 'none',
-    borderRadius: '4px',
     cursor: 'pointer',
-    marginBottom: '14px',
+    padding: '6px 8px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '5px',
+    borderRadius: '6px',
+    color: 'var(--k8s-text-primary)',
     fontSize: '13px',
-    fontWeight: 500,
+    transition: 'background 0.15s',
+  },
+  searchInput: {
+    width: '100%',
+    padding: '7px 10px',
+    border: '1px solid var(--k8s-border)',
+    borderRadius: '4px',
+    fontSize: '12px',
+    outline: 'none',
+    marginBottom: '10px',
+    boxSizing: 'border-box',
   },
   sessionList: {
     display: 'flex',
@@ -366,6 +437,8 @@ const styles: { [key: string]: React.CSSProperties } = {
     fontSize: '13px',
     lineHeight: '1.7',
     borderLeft: '3px solid var(--k8s-blue)',
+    minWidth: 0,
+    overflow: 'hidden',
   },
   warning: {
     background: '#fff8e1',
