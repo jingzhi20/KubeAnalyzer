@@ -41,7 +41,7 @@ const isGroup = (entry: MenuEntry): entry is MenuGroup => 'group' in entry;
 function Layout() {
   const [activeCluster, setActiveCluster] = useState<ClusterConfig | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [showUserMenu, setShowUserMenu] = useState(false);
+  const [avatarHovered, setAvatarHovered] = useState(false);
   const [sysMenuOpen, setSysMenuOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -274,47 +274,43 @@ function Layout() {
           {/* User section */}
           {currentUser && (
             <div className="relative border-t border-gray-100/80 pt-3 mt-1">
-              <button
-                onClick={() => setShowUserMenu(!showUserMenu)}
-                className="w-full flex items-center gap-3 px-2 py-2.5 rounded-2xl hover:bg-gray-50/80 transition-all duration-300 group"
-              >
-                {currentUser.avatar_url ? (
-                  <img
-                    src={currentUser.avatar_url}
-                    alt="avatar"
-                    className="w-10 h-10 rounded-[14px] object-cover ring-1 ring-black/5 shadow-sm transition-transform duration-300 group-hover:scale-105"
-                  />
-                ) : (
-                  <div className="w-10 h-10 rounded-[14px] bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center text-white text-sm font-bold ring-1 ring-black/5 shadow-sm shadow-gray-900/20 transition-transform duration-300 group-hover:scale-105">
-                    {currentUser.username.charAt(0).toUpperCase()}
+              <div className="w-full flex items-center gap-3 px-2 py-2.5 rounded-2xl">
+                {/* Avatar / Logout toggle */}
+                <button
+                  onClick={handleLogout}
+                  onMouseEnter={() => setAvatarHovered(true)}
+                  onMouseLeave={() => setAvatarHovered(false)}
+                  className="relative w-10 h-10 rounded-[14px] flex-shrink-0 overflow-hidden cursor-pointer group"
+                  title="退出登录"
+                >
+                  {/* Avatar layer */}
+                  <div className={`absolute inset-0 flex items-center justify-center transition-all duration-300 ease-in-out ${avatarHovered ? 'opacity-0 scale-75 rotate-12' : 'opacity-100 scale-100 rotate-0'}`}>
+                    {currentUser.avatar_url ? (
+                      <img
+                        src={currentUser.avatar_url}
+                        alt="avatar"
+                        className="w-full h-full object-cover ring-1 ring-black/5 shadow-sm rounded-[14px]"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center text-white text-sm font-bold ring-1 ring-black/5 shadow-sm shadow-gray-900/20 rounded-[14px]">
+                        {currentUser.username.charAt(0).toUpperCase()}
+                      </div>
+                    )}
                   </div>
-                )}
+                  {/* Logout icon layer */}
+                  <div className={`absolute inset-0 flex items-center justify-center rounded-[14px] bg-gradient-to-br from-red-500 to-rose-600 shadow-md shadow-red-500/25 transition-all duration-300 ease-in-out ${avatarHovered ? 'opacity-100 scale-100 rotate-0' : 'opacity-0 scale-75 -rotate-12'}`}>
+                    <LogOut size={18} className="text-white" />
+                  </div>
+                </button>
                 <div className="flex-1 text-left min-w-0">
                   <div className="text-[14px] font-semibold text-gray-800 leading-tight truncate">
                     {currentUser.display_name || currentUser.username}
                   </div>
-                  <div className="text-[12px] font-medium text-gray-400 mt-0.5">
-                    {currentUser.role === 'admin' ? 'Administrator' : 'User'}
+                  <div className={`text-[12px] font-medium mt-0.5 transition-colors duration-300 ${avatarHovered ? 'text-red-400' : 'text-gray-400'}`}>
+                    {avatarHovered ? '退出登录' : (currentUser.role === 'admin' ? 'Administrator' : 'User')}
                   </div>
                 </div>
-                <ChevronDown
-                  size={16}
-                  className={`text-gray-400 transition-transform duration-300 flex-shrink-0 ${
-                    showUserMenu ? 'rotate-180' : ''
-                  }`}
-                />
-              </button>
-              {showUserMenu && (
-                <div className="absolute bottom-full left-0 right-0 mb-6 bg-white/95 backdrop-blur-xl rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-gray-100/80 p-2 z-50">
-                  <button
-                    onClick={handleLogout}
-                    className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[13px] font-medium text-red-600 hover:bg-red-50/80 hover:text-red-700 transition-all duration-200"
-                  >
-                    <LogOut size={16} />
-                    <span>退出登录</span>
-                  </button>
-                </div>
-              )}
+              </div>
             </div>
           )}
         </div>
