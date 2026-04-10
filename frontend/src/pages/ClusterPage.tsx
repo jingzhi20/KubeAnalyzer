@@ -1,20 +1,48 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { clusterApi } from '../api';
 import type { ClusterConfig } from '../types';
+
+function useToast() {
+  const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
+  const show = useCallback((msg: string, type: 'success' | 'error' = 'success') => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3000);
+  }, []);
+  return { toast, show };
+}
+
+function Toast({ msg, type }: { msg: string; type: 'success' | 'error' }) {
+  return (
+    <div style={{
+      position: 'fixed', top: '24px', left: '50%', transform: 'translateX(-50%)',
+      padding: '10px 24px', borderRadius: '8px', fontSize: '14px', fontWeight: 500,
+      zIndex: 9999, boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+      background: type === 'success' ? '#e8f5e9' : '#fef2f2',
+      color: type === 'success' ? '#2e7d32' : '#dc2626',
+      border: `1px solid ${type === 'success' ? '#a5d6a7' : '#fecaca'}`,
+      animation: 'toastIn 0.3s ease',
+    }}>
+      {type === 'success' ? '✅ ' : '❌ '}{msg}
+    </div>
+  );
+}
 
 function ClusterPage() {
   const [clusters, setClusters] = useState<ClusterConfig[]>([]);
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [testingId, setTestingId] = useState<number | null>(null);
   const [agentTokenInfo, setAgentTokenInfo] = useState<{ id: number; token: string; ws_url: string; deploy_cmd: string } | null>(null);
-  const [formData, setFormData] = useState({
+  const { toast, show: showToast } = useToast();
+  const defaultFormData = {
     name: '',
     kubeconfig: '',
     context: '',
     server_url: '',
     conn_mode: 'direct' as 'direct' | 'agent',
-  });
+  };
+  const [formData, setFormData] = useState(defaultFormData);
 
   useEffect(() => {
     loadClusters();
@@ -33,15 +61,38 @@ function ClusterPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      await clusterApi.create(formData);
-      setFormData({ name: '', kubeconfig: '', context: '', server_url: '', conn_mode: 'direct' });
+      if (editingId) {
+        await clusterApi.update(editingId, formData);
+      } else {
+        await clusterApi.create(formData);
+      }
+      setFormData(defaultFormData);
       setShowForm(false);
+      setEditingId(null);
       loadClusters();
     } catch (err: any) {
-      alert(err.response?.data?.error?.message || '创建失败');
+      showToast(err.response?.data?.error?.message || (editingId ? '更新失败' : '创建失败'), 'error');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleEdit = (cluster: ClusterConfig) => {
+    setEditingId(cluster.id);
+    setFormData({
+      name: cluster.name,
+      kubeconfig: cluster.kubeconfig || '',
+      context: cluster.context || '',
+      server_url: cluster.server_url || '',
+      conn_mode: cluster.conn_mode || 'direct',
+    });
+    setShowForm(true);
+  };
+
+  const handleCancelForm = () => {
+    setShowForm(false);
+    setEditingId(null);
+    setFormData(defaultFormData);
   };
 
   const handleSetActive = async (id: number) => {
@@ -49,7 +100,7 @@ function ClusterPage() {
       await clusterApi.setActive(id);
       loadClusters();
     } catch (err: any) {
-      alert(err.response?.data?.error?.message || '切换失败');
+      showToast(err.response?.data?.error?.message || '切换失败', 'error');
     }
   };
 
@@ -57,10 +108,10 @@ function ClusterPage() {
     setTestingId(id);
     try {
       await clusterApi.test(id);
-      alert('集群连通性测试成功');
+      showToast('集群连通性测试成功');
       loadClusters();
     } catch (err: any) {
-      alert(err.response?.data?.error?.message || '测试失败');
+      showToast(err.response?.data?.error?.message || '测试失败', 'error');
       loadClusters();
     } finally {
       setTestingId(null);
@@ -73,7 +124,7 @@ function ClusterPage() {
       await clusterApi.delete(id);
       loadClusters();
     } catch (err: any) {
-      alert(err.response?.data?.error?.message || '删除失败');
+      showToast(err.response?.data?.error?.message || '删除失败', 'error');
     }
   };
 
@@ -93,7 +144,7 @@ function ClusterPage() {
       setAgentTokenInfo({ id, ...resp.data });
       loadClusters();
     } catch (err: any) {
-      alert(err.response?.data?.error?.message || '生成 Token 失败');
+      showToast(err.response?.data?.error?.message || '生成 Token 失败', 'error');
     }
   };
 
@@ -125,15 +176,22 @@ function ClusterPage() {
 
   return (
     <div>
+      {toast && <Toast msg={toast.msg} type={toast.type} />}
+      <style>{`@keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(-12px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }`}</style>
       <div style={styles.header}>
         <h1 style={styles.title}>集群管理</h1>
-        <button style={styles.addBtn} onClick={() => setShowForm(!showForm)}>
+        <button style={styles.addBtn} onClick={() => {
+          if (showForm) { handleCancelForm(); } else { setShowForm(true); }
+        }}>
           {showForm ? '取消' : '+ 添加集群'}
         </button>
       </div>
 
       {showForm && (
         <form onSubmit={handleSubmit} style={styles.form}>
+          <h3 style={{ margin: '0 0 16px 0', fontSize: '15px', fontWeight: 600, color: 'var(--k8s-text-primary)' }}>
+            {editingId ? '编辑集群' : '添加集群'}
+          </h3>
           {/* Connection mode selector */}
           <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
             <label style={{
@@ -203,11 +261,11 @@ function ClusterPage() {
           {formData.conn_mode === 'direct' && (
             <textarea
               style={styles.textarea}
-              placeholder="粘贴 kubeconfig 内容（或通过上方上传文件）"
+              placeholder={editingId ? '留空则保持原有 kubeconfig 不变' : '粘贴 kubeconfig 内容（或通过上方上传文件）'}
               value={formData.kubeconfig}
               onChange={(e) => setFormData({ ...formData, kubeconfig: e.target.value })}
               rows={8}
-              required
+              required={!editingId}
             />
           )}
 
@@ -219,7 +277,7 @@ function ClusterPage() {
           )}
 
           <button type="submit" style={styles.submitBtn} disabled={loading}>
-            {loading ? '保存中...' : '保存集群'}
+            {loading ? '保存中...' : editingId ? '更新集群' : '保存集群'}
           </button>
         </form>
       )}
@@ -247,7 +305,7 @@ function ClusterPage() {
             style={{ ...styles.submitBtn, marginTop: '8px' }}
             onClick={() => {
               navigator.clipboard.writeText(agentTokenInfo.deploy_cmd);
-              alert('已复制到剪贴板');
+              showToast('已复制到剪贴板');
             }}
           >
             一键复制部署命令
@@ -276,12 +334,13 @@ function ClusterPage() {
                 }}>
                   {connModeLabel(cluster.conn_mode)}
                 </span>
-                <span style={{ ...styles.badge, background: sc.bg, color: sc.color }}>
-                  {statusText(cluster.status)}
-                </span>
-                {cluster.conn_mode === 'agent' && (
+                {cluster.conn_mode === 'agent' ? (
                   <span style={{ ...styles.badge, background: ac.bg, color: ac.color }}>
-                    Agent {cluster.agent_status === 'online' ? '在线' : '离线'}
+                    {cluster.agent_status === 'online' ? '在线' : '离线'}
+                  </span>
+                ) : (
+                  <span style={{ ...styles.badge, background: sc.bg, color: sc.color }}>
+                    {statusText(cluster.status)}
                   </span>
                 )}
                 {cluster.is_active && <span style={styles.activeBadge}>当前活跃</span>}
@@ -332,6 +391,12 @@ function ClusterPage() {
                   disabled={testingId === cluster.id}
                 >
                   {testingId === cluster.id ? '测试中...' : '测试连通性'}
+                </button>
+                <button
+                  style={{ ...styles.actionBtn, color: '#ff9800', borderColor: '#ff9800' }}
+                  onClick={() => handleEdit(cluster)}
+                >
+                  编辑
                 </button>
                 {cluster.conn_mode === 'agent' && (
                   <button

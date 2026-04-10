@@ -18,8 +18,9 @@ type Message struct {
 
 // ChatCompletionRequest represents an OpenAI-compatible chat completion request.
 type ChatCompletionRequest struct {
-	Model    string    `json:"model"`
-	Messages []Message `json:"messages"`
+	Model       string    `json:"model"`
+	Messages    []Message `json:"messages"`
+	Temperature *float64  `json:"temperature,omitempty"`
 }
 
 // ChatCompletionResponse represents an OpenAI-compatible chat completion response.
@@ -40,8 +41,18 @@ type LLMConfig struct {
 
 // LLMClient defines the interface for LLM operations.
 type LLMClient interface {
-	ChatCompletion(ctx context.Context, config LLMConfig, messages []Message) (string, error)
+	ChatCompletion(ctx context.Context, config LLMConfig, messages []Message, opts ...CallOption) (string, error)
 	TestConnection(ctx context.Context, config LLMConfig) error
+}
+
+// CallOption allows optional parameters for LLM calls.
+type CallOption func(*ChatCompletionRequest)
+
+// WithTemperature sets the temperature for the LLM call.
+func WithTemperature(t float64) CallOption {
+	return func(req *ChatCompletionRequest) {
+		req.Temperature = &t
+	}
 }
 
 type llmClient struct {
@@ -58,10 +69,14 @@ func New() LLMClient {
 }
 
 // ChatCompletion sends a chat completion request to the LLM provider.
-func (c *llmClient) ChatCompletion(ctx context.Context, config LLMConfig, messages []Message) (string, error) {
+func (c *llmClient) ChatCompletion(ctx context.Context, config LLMConfig, messages []Message, opts ...CallOption) (string, error) {
 	reqBody := ChatCompletionRequest{
 		Model:    config.ModelName,
 		Messages: messages,
+	}
+
+	for _, opt := range opts {
+		opt(&reqBody)
 	}
 
 	jsonData, err := json.Marshal(reqBody)

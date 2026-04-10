@@ -96,80 +96,17 @@ func (s *DiagnosisService) RenameSession(sessionID uint, userID uint, title stri
 }
 
 // intentPrompt is the system prompt for intent recognition and command generation.
-const intentPrompt = `你是一个 Kubernetes 运维 AI 助手。用户会用自然语言提问关于集群的问题。
+const intentPrompt = `你是一个 Kubernetes 运维助手。根据用户问题生成 kubectl 只读命令。
 
-你的任务是判断用户的问题是否需要查询集群数据。如果需要，从下面的命令模板中选择合适的命令。
+规则：
+1. 只生成 get、describe、logs、top、version、cluster-info、api-resources 命令
+2. 未指定 namespace 则用 -A
+3. 最多 3 条命令
+4. 不需要查集群的问题（概念、反馈等），need_query=false
+5. 直接用用户提到的资源名称，不要自作主张加 API group 后缀
 
-## 可用命令模板（只能从中选择，不能自创参数）：
-
-kubectl version
-kubectl cluster-info
-kubectl get nodes
-kubectl get nodes -o wide
-kubectl top nodes
-kubectl top pods -A
-kubectl top pods -n <namespace>
-kubectl get pods -A
-kubectl get pods -n <namespace>
-kubectl get pods -n <namespace> -o wide
-kubectl get namespaces
-kubectl get services -A
-kubectl get services -n <namespace>
-kubectl get deployments -A
-kubectl get deployments -n <namespace>
-kubectl get statefulsets -A
-kubectl get daemonsets -A
-kubectl get jobs -A
-kubectl get cronjobs -A
-kubectl get ingress -A
-kubectl get configmaps -n <namespace>
-kubectl get secrets -n <namespace>
-kubectl get pv
-kubectl get pvc -A
-kubectl get events -A --sort-by=.lastTimestamp
-kubectl get events -n <namespace> --sort-by=.lastTimestamp
-kubectl describe node <node-name>
-kubectl describe pod <pod-name> -n <namespace>
-kubectl describe deployment <name> -n <namespace>
-kubectl describe service <name> -n <namespace>
-kubectl logs <pod-name> -n <namespace> --tail=100
-kubectl get hpa -A
-kubectl get networkpolicy -A
-kubectl api-resources
-
-## 规则：
-1. 只能使用上面列出的命令模板，将 <namespace>、<pod-name> 等占位符替换为用户提到的实际值
-2. 如果用户没有指定 namespace，使用 -A（全部命名空间）
-3. 如果需要统计、排序、对比，用简单命令获取原始数据，由 AI 在回答阶段分析
-4. 最多生成 3 条命令
-5. 概念性问题、最佳实践等不需要查询集群的问题，need_query=false
-6. 如果用户在追问之前的回答，根据上下文判断是否需要重新查询
-
-请严格按以下 JSON 格式回复（不要包含其他内容）：
-{
-  "need_query": true/false,
-  "commands": ["kubectl ..."],
-  "reason": "简要说明"
-}
-
-示例：
-用户：集群版本是多少？
-{"need_query":true,"commands":["kubectl version"],"reason":"查询集群版本"}
-
-用户：哪个 namespace 的 pod 最多？
-{"need_query":true,"commands":["kubectl get pods -A"],"reason":"获取全部 Pod，由 AI 统计"}
-
-用户：kube-system 下有哪些 pod？
-{"need_query":true,"commands":["kubectl get pods -n kube-system"],"reason":"查看指定命名空间的 Pod"}
-
-用户：什么是 DaemonSet？
-{"need_query":false,"commands":[],"reason":"概念性问题"}
-
-用户：节点资源使用情况？
-{"need_query":true,"commands":["kubectl top nodes","kubectl get nodes -o wide"],"reason":"查看节点资源"}
-
-用户：上一个回答不对
-{"need_query":false,"commands":[],"reason":"用户在评价之前的回答"}`
+回复 JSON：
+{"need_query":true/false,"commands":["kubectl ..."],"reason":"说明"}`
 
 // intentResult represents the LLM's intent recognition result.
 type intentResult struct {
@@ -228,15 +165,15 @@ func (s *DiagnosisService) SubmitQuery(sessionID uint, userID uint, question str
 	// Step 3: Build final LLM messages with conversation history + cluster data
 	messages := []llmclient.Message{
 		{Role: "system", Content: `你是一个 Kubernetes 运维专家 AI 助手。请遵循以下规则：
-1. 回答要简洁精炼，直接给出结论，避免冗长的解释
-2. 如果有集群查询结果，基于实际数据回答，直接呈现关键信息
-3. 如果查询失败或数据不完整，尝试用你的专业知识回答用户问题，不要只说"查询失败"就结束
-4. 使用 Markdown 格式化输出，善用表格、代码块展示数据
-5. 不要重复用户的问题，不要说"根据查询结果"之类的废话，直接给答案
-6. 如果需要统计、排序、汇总，直接分析原始数据并给出结果`},
+1. 简洁精炼，直接给结论
+2. 本次实时查询的数据是最权威的，优先基于它回答，忽略历史中可能过时的数据
+3. 善用 Markdown 表格、代码块展示数据
+4. 不要重复问题，不要说"根据查询结果"，直接给答案
+5. 用户说之前回答有误时，回顾对话历史纠正错误，不要查新资源
+6. 查询失败时用专业知识回答，不要只说"查询失败"就结束`},
 	}
 
-	// Add conversation history
+	// Add conversation history (question + answer only, no old cluster data to avoid confusion)
 	for _, r := range prevRecords {
 		messages = append(messages, llmclient.Message{Role: "user", Content: r.Question})
 		if r.LLMAvailable && r.LLMResponse != "" {
@@ -244,10 +181,10 @@ func (s *DiagnosisService) SubmitQuery(sessionID uint, userID uint, question str
 		}
 	}
 
-	// Build current user message
+	// Build current user message — clearly mark fresh data
 	userContent := question
 	if clusterData != "" {
-		userContent = fmt.Sprintf("%s\n\n以下是从集群查询到的实际数据：\n```\n%s\n```\n请基于以上数据回答用户问题。", question, clusterData)
+		userContent = fmt.Sprintf("%s\n\n以下是【本次实时查询】的集群数据（以此为准）：\n```\n%s\n```", question, clusterData)
 	}
 	messages = append(messages, llmclient.Message{Role: "user", Content: userContent})
 
@@ -286,11 +223,12 @@ func (s *DiagnosisService) recognizeIntent(question string, llmConf llmclient.LL
 		{Role: "system", Content: intentPrompt},
 	}
 
-	// Include recent history for context
-	for _, r := range history {
-		if len(history) > 4 {
-			break
-		}
+	// Include recent history questions only (no answers to avoid context pollution)
+	start := 0
+	if len(history) > 4 {
+		start = len(history) - 4
+	}
+	for _, r := range history[start:] {
 		messages = append(messages, llmclient.Message{Role: "user", Content: r.Question})
 	}
 
@@ -299,7 +237,7 @@ func (s *DiagnosisService) recognizeIntent(question string, llmConf llmclient.LL
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	resp, err := s.llmClient.ChatCompletion(ctx, llmConf, messages)
+	resp, err := s.llmClient.ChatCompletion(ctx, llmConf, messages, llmclient.WithTemperature(0.1))
 	if err != nil {
 		return fallback
 	}

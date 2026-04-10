@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { kubectlAiApi } from '../api';
 import type { KubectlAIHistory } from '../types';
-import { Settings } from 'lucide-react';
+import { Settings, Copy, Check } from 'lucide-react';
 
 const DEFAULT_EXAMPLES = [
   '列出所有 namespace 中状态异常的 Pod',
@@ -18,6 +18,7 @@ function KubectlAIPage() {
   const [errorInfo, setErrorInfo] = useState<{ code: string; message: string } | null>(null);
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<'generate' | 'execute'>('generate');
+  const [copied, setCopied] = useState(false);
   const [history, setHistory] = useState<KubectlAIHistory[]>([]);
   const [showConfig, setShowConfig] = useState(false);
   const [configForm, setConfigForm] = useState({
@@ -277,11 +278,34 @@ function KubectlAIPage() {
         {command && (
           <div style={styles.resultSection}>
             <h3 style={{ marginTop: 0, marginBottom: '12px' }}>生成的命令</h3>
-            <div style={styles.commandBlock}>
-              <code style={styles.commandCode}>{command}</code>
-              <button style={styles.copyBtn}
-                onClick={() => { navigator.clipboard.writeText(command); }}>
-                复制
+            <div style={{ position: 'relative' as const }}>
+              <div style={styles.commandBlock}>
+                <code style={styles.commandCode}>{command}</code>
+              </div>
+              <button
+                style={{
+                  position: 'absolute' as const,
+                  top: '8px',
+                  right: '8px',
+                  width: '32px',
+                  height: '32px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: copied ? 'transparent' : 'rgba(255,255,255,0.08)',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  color: copied ? '#4ec9b0' : '#999',
+                  transition: 'all 0.2s',
+                }}
+                onClick={() => {
+                  navigator.clipboard.writeText(command);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                }}
+              >
+                {copied ? <Check size={16} /> : <Copy size={16} />}
               </button>
             </div>
           </div>
@@ -335,9 +359,9 @@ function KubectlAIPage() {
 
 const styles: { [key: string]: React.CSSProperties } = {
   container: { display: 'flex', gap: '20px', height: 'calc(100vh - 100px)' },
-  leftCol: { flex: 6, display: 'flex', flexDirection: 'column' as const },
+  leftCol: { flex: 7, display: 'flex', flexDirection: 'column' as const, minWidth: 0 },
   headerRow: { display: 'flex', alignItems: 'center', marginBottom: '16px', gap: '12px' },
-  rightCol: { flex: 4, display: 'flex', flexDirection: 'column' as const },
+  rightCol: { flex: 3, display: 'flex', flexDirection: 'column' as const, minWidth: 0 },
   sideTitle: { margin: '0 0 16px 0', fontSize: '20px', fontWeight: 600, color: 'var(--k8s-text-primary)' },
   main: { flex: 1, display: 'flex', flexDirection: 'column' as const, gap: '16px', overflow: 'auto' },
   sidebar: { flex: 1, background: 'var(--k8s-card-bg)', borderRadius: '16px', border: '1px solid var(--k8s-border)', display: 'flex', flexDirection: 'column' as const, overflow: 'hidden' },
@@ -362,10 +386,9 @@ const styles: { [key: string]: React.CSSProperties } = {
   inputRow: { display: 'flex', gap: '10px' },
   promptInput: { flex: 1, padding: '10px 14px', border: '1px solid var(--k8s-border)', borderRadius: '12px', fontSize: '13px', outline: 'none' },
   submitBtn: { padding: '10px 24px', background: 'var(--k8s-blue)', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', fontSize: '13px', whiteSpace: 'nowrap' as const, fontWeight: 500 },
-  resultSection: { background: 'var(--k8s-card-bg)', padding: '20px', borderRadius: '16px', border: '1px solid var(--k8s-border)' },
-  commandBlock: { display: 'flex', alignItems: 'center', background: '#1e1e1e', padding: '12px 14px', borderRadius: '10px', gap: '10px' },
-  commandCode: { flex: 1, color: '#4ec9b0', fontSize: '13px', fontFamily: 'var(--k8s-mono)', wordBreak: 'break-all' as const },
-  copyBtn: { padding: '4px 12px', background: '#333', color: '#fff', border: 'none', borderRadius: '3px', cursor: 'pointer', fontSize: '11px' },
+  resultSection: { background: 'var(--k8s-card-bg)', padding: '20px', borderRadius: '16px', border: '1px solid var(--k8s-border)', minWidth: 0, overflow: 'hidden' },
+  commandBlock: { display: 'flex', alignItems: 'center', background: '#1e1e1e', padding: '12px 44px 12px 14px', borderRadius: '10px', gap: '10px', overflow: 'hidden' },
+  commandCode: { flex: 1, color: '#4ec9b0', fontSize: '13px', fontFamily: 'var(--k8s-mono)', wordBreak: 'break-all' as const, overflow: 'auto', maxHeight: '120px' },
   outputSection: { background: 'var(--k8s-card-bg)', padding: '20px', borderRadius: '16px', border: '1px solid var(--k8s-border)' },
   outputPre: { background: '#f5f5f5', padding: '14px', borderRadius: '10px', fontSize: '12px', fontFamily: 'var(--k8s-mono)', overflow: 'auto', maxHeight: '400px', lineHeight: '1.5' },
   emptyState: { textAlign: 'center' as const, padding: '36px', color: 'var(--k8s-text-muted)', background: 'var(--k8s-card-bg)', borderRadius: '16px', border: '1px solid var(--k8s-border)', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' },

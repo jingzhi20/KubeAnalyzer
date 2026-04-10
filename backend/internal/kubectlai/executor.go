@@ -80,8 +80,8 @@ func getSystemPrompt() string {
 	return defaultSystemPrompt
 }
 
-// Generate generates a kubectl command from natural language using LLM.
-func (e *Executor) Generate(ctx context.Context, prompt string) (*ExecuteResult, error) {
+// generateCommand is the internal LLM call without saving history.
+func (e *Executor) generateCommand(ctx context.Context, prompt string) (*ExecuteResult, error) {
 	llmConf, err := e.getLLMConfig()
 	if err != nil {
 		return nil, err
@@ -105,14 +105,33 @@ func (e *Executor) Generate(ctx context.Context, prompt string) (*ExecuteResult,
 	return &ExecuteResult{
 		Prompt:  prompt,
 		Command: command,
-		// Output is intentionally empty: command was generated but not executed
 	}, nil
+}
+
+// Generate generates a kubectl command from natural language using LLM.
+func (e *Executor) Generate(ctx context.Context, prompt string, userID, clusterID uint) (*ExecuteResult, error) {
+	result, err := e.generateCommand(ctx, prompt)
+	if err != nil {
+		return nil, err
+	}
+
+	// Save history for generate-only mode
+	history := model.KubectlAIHistory{
+		UserID:    userID,
+		ClusterID: clusterID,
+		Prompt:    prompt,
+		Command:   result.Command,
+		Executed:  false,
+	}
+	database.DB.Create(&history)
+
+	return result, nil
 }
 
 // Execute generates a kubectl command via LLM and executes it.
 func (e *Executor) Execute(ctx context.Context, prompt string, userID, clusterID uint) (*ExecuteResult, error) {
 	// Step 1: Generate the command
-	genResult, err := e.Generate(ctx, prompt)
+	genResult, err := e.generateCommand(ctx, prompt)
 	if err != nil {
 		return nil, err
 	}

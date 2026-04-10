@@ -22,8 +22,8 @@ const diagnosticLabels: Record<string, string> = {
   'Storage': '存储健康',
 };
 const networkDiagLabels: Record<string, string> = {
-  'NetworkComponentPods': '网络组件 Pod 诊断',
-  'IngressAccessLog': '🌐 Ingress 访问日志分析',
+  'NetworkComponentPods': '网络组件诊断',
+  'IngressAccessLog': '🌐 Ingress logs 诊断',
 };
 const specialFilters = [...traefikFilters, ...istioFilters, ...gatewayAPIFilters, ...olmFilters, ...networkDiagFilters, ...diagnosticFilters, ...webhookFilters];
 
@@ -79,12 +79,20 @@ function K8sGPTPage() {
   };
 
   const loadNamespaces = async () => {
+    if (!selectedClusterId) {
+      setNamespaces([]);
+      return;
+    }
     setLoadingNs(true);
     try {
-      const response = await k8sgptApi.listNamespaces(selectedClusterId || undefined);
+      const response = await k8sgptApi.listNamespaces(selectedClusterId);
       setNamespaces(response.data.namespaces || []);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to load namespaces:', err);
+      setNamespaces([]);
+      const errData = err.response?.data?.error;
+      const detail = errData?.suggestion || errData?.message || '';
+      alert(`获取命名空间失败，请检查集群连接${detail ? ': ' + detail : ''}`);
     } finally {
       setLoadingNs(false);
     }
@@ -110,7 +118,11 @@ function K8sGPTPage() {
       setStats(response.data.stats || []);
       setRawJSON(response.data.raw_json || '');
     } catch (err: any) {
-      alert(err.response?.data?.error?.message || '分析失败');
+      const errData = err.response?.data?.error;
+      const msg = errData?.suggestion
+        ? `${errData.message}: ${errData.suggestion}`
+        : errData?.message || '分析失败';
+      alert(msg);
     } finally {
       setAnalyzing(false);
     }
@@ -121,7 +133,11 @@ function K8sGPTPage() {
       await k8sgptApi.invalidateCache();
       alert('缓存已清除');
     } catch (err: any) {
-      alert(err.response?.data?.error?.message || '清除缓存失败');
+      const errData = err.response?.data?.error;
+      const msg = errData?.suggestion
+        ? `${errData.message}: ${errData.suggestion}`
+        : errData?.message || '清除缓存失败';
+      alert(msg);
     }
   };
 

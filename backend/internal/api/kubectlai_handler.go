@@ -24,10 +24,18 @@ func KubectlAIGenerate(c *gin.Context) {
 		return
 	}
 
+	userID := c.GetUint("user_id")
+
+	// Get active cluster ID
+	var clusterID uint
+	if ac, err := cluster.GetActiveCluster(); err == nil {
+		clusterID = ac.ID
+	}
+
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 60*time.Second)
 	defer cancel()
 
-	result, err := kubectlAIExecutor.Generate(ctx, req.Prompt)
+	result, err := kubectlAIExecutor.Generate(ctx, req.Prompt, userID, clusterID)
 	if err != nil {
 		errMsg := err.Error()
 		// Distinguish LLM not configured error with a specific code

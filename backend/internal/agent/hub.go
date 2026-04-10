@@ -214,6 +214,8 @@ func (h *Hub) HandleAgentMessages(agent *AgentConn) {
 
 		case "ping":
 			agent.LastPing = time.Now()
+			// Update last_ping_at in database so heartbeat timeout check stays accurate
+			h.updateLastPing(agent.ClusterID)
 			agent.mu.Lock()
 			agent.Conn.WriteJSON(AgentMessage{Type: "pong"})
 			agent.mu.Unlock()
@@ -265,8 +267,24 @@ func (h *Hub) updateAgentStatus(clusterID uint, status string, allowWrite bool) 
 		now := time.Now()
 		updates["last_ping_at"] = &now
 		updates["allow_write"] = allowWrite
+		updates["status"] = "connected"
+	} else {
+		updates["status"] = "disconnected"
 	}
 	database.DB.Model(&model.ClusterConfig{}).Where("id = ?", clusterID).Updates(updates)
+}
+
+// updateLastPing updates only the last_ping_at timestamp in database.
+func (h *Hub) updateLastPing(clusterID uint) {
+	if database.DB == nil {
+		return
+	}
+	now := time.Now()
+	database.DB.Model(&model.ClusterConfig{}).Where("id = ?", clusterID).
+		Updates(map[string]interface{}{
+			"last_ping_at":  &now,
+			"agent_status":  "online",
+		})
 }
 
 // GetOnlineAgentIDs returns cluster IDs of all online agents.

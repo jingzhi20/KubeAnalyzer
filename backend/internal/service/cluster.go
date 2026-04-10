@@ -31,8 +31,12 @@ func (s *ClusterService) ListClusters() ([]model.ClusterConfig, error) {
 		if clusters[i].ConnMode == "agent" && clusters[i].AgentStatus == "online" {
 			if clusters[i].LastPingAt == nil || now.Sub(*clusters[i].LastPingAt) > 60*time.Second {
 				clusters[i].AgentStatus = "offline"
+				clusters[i].Status = "disconnected"
 				// Persist the status change
-				database.DB.Model(&clusters[i]).Update("agent_status", "offline")
+				database.DB.Model(&clusters[i]).Updates(map[string]interface{}{
+					"agent_status": "offline",
+					"status":       "disconnected",
+				})
 			}
 		}
 	}
@@ -69,7 +73,9 @@ func (s *ClusterService) UpdateCluster(id uint, name, kubeconfig, kubeContext, s
 	}
 
 	c.Name = name
-	c.KubeConfig = kubeconfig
+	if kubeconfig != "" {
+		c.KubeConfig = kubeconfig
+	}
 	c.Context = kubeContext
 	c.ServerURL = serverURL
 	if connMode != "" {
@@ -126,6 +132,9 @@ func (s *ClusterService) TestCluster(id uint) (string, error) {
 	exec, err := cluster.GetExecutorForCluster(&c)
 	if err != nil {
 		c.Status = "disconnected"
+		if c.ConnMode == "agent" {
+			c.AgentStatus = "offline"
+		}
 		database.DB.Save(&c)
 		return "", fmt.Errorf("failed to create executor: %w", err)
 	}
@@ -137,11 +146,19 @@ func (s *ClusterService) TestCluster(id uint) (string, error) {
 	output, err := exec.ExecKubectl(ctx, []string{"cluster-info"})
 	if err != nil {
 		c.Status = "disconnected"
+		if c.ConnMode == "agent" {
+			c.AgentStatus = "offline"
+		}
 		database.DB.Save(&c)
 		return string(output), fmt.Errorf("cluster connectivity test failed: %s", string(output))
 	}
 
 	c.Status = "connected"
+	if c.ConnMode == "agent" {
+		c.AgentStatus = "online"
+		now := time.Now()
+		c.LastPingAt = &now
+	}
 	c.UpdatedAt = time.Now()
 	database.DB.Save(&c)
 	return string(output), nil

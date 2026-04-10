@@ -21,6 +21,7 @@ function DiagnosisPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const pendingQuestion = useRef('');
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const isComposingRef = useRef(false);
 
   useEffect(() => {
     loadSessions();
@@ -282,7 +283,14 @@ function DiagnosisPage() {
                 style={styles.input}
                 value={question}
                 onChange={(e) => setQuestion(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}
+                onCompositionStart={() => { isComposingRef.current = true; }}
+                onCompositionEnd={() => { isComposingRef.current = false; }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (!isComposingRef.current) submitQuery();
+                  }
+                }}
                 placeholder="输入您的诊断问题..."
                 disabled={loading}
               />
