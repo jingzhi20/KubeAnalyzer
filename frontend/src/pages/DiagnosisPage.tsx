@@ -3,7 +3,7 @@ import { diagnosisApi } from '../api';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { DiagnosisSession, DiagnosisRecord } from '../types';
-import { Trash2, Pencil, Check, X, SquarePen, Search } from 'lucide-react';
+import { Trash2, Pencil, Check, X, SquarePen, Search, Send, Sparkles } from 'lucide-react';
 import './DiagnosisPage.css';
 
 function DiagnosisPage() {
@@ -135,6 +135,52 @@ function DiagnosisPage() {
       setLoading(false);
     }
   };
+
+  // 从欢迎页直接提问：先创建会话，再提交问题
+  const submitFromWelcome = async () => {
+    const q = question.trim();
+    if (!q) return;
+    setQuestion('');
+    try {
+      const response = await diagnosisApi.createSession({ title: '新对话' });
+      const newSession = response.data;
+      setCurrentSession(newSession);
+      setRecords([]);
+      setErrorInfo(null);
+      setShowSearch(false);
+      setSearchQuery('');
+
+      // 提交问题
+      pendingQuestion.current = q;
+      setLoading(true);
+      try {
+        const res = await diagnosisApi.submitQuery(newSession.id, { question: q });
+        setRecords([res.data]);
+        const title = q.slice(0, 20) + (q.length > 20 ? '...' : '');
+        diagnosisApi.renameSession(newSession.id, title).catch(() => {});
+        const namedSession = { ...newSession, title };
+        setSessions(prev => [namedSession, ...prev]);
+        setCurrentSession(namedSession);
+      } catch (err: any) {
+        const errData = err.response?.data?.error;
+        setErrorInfo({
+          code: errData?.code || 'ERROR',
+          message: errData?.message || '提交失败，请稍后重试',
+        });
+      } finally {
+        setLoading(false);
+      }
+    } catch (err) {
+      console.error('Failed to create session:', err);
+    }
+  };
+
+  const suggestedQuestions = [
+    { icon: '🔍', text: '集群中有哪些异常的 Pod？' },
+    { icon: '📊', text: '各节点的资源使用情况如何？' },
+    { icon: '🌐', text: '集群中有多少个 namespace？' },
+    { icon: '⚡', text: '最近有哪些告警事件？' },
+  ];
 
   return (
     <div style={styles.container}>
@@ -300,7 +346,62 @@ function DiagnosisPage() {
             </div>
           </>
         ) : (
-          <div style={styles.empty}>请选择或创建一个诊断会话</div>
+          <div style={styles.welcomeContainer}>
+            <div style={styles.welcomeContent}>
+              <div style={styles.welcomeIcon}>
+                <Sparkles size={36} color="var(--k8s-blue)" />
+              </div>
+              <h1 style={styles.welcomeTitle}>有什么可以帮你的？</h1>
+              <p style={styles.welcomeSubtitle}>AI 智能诊断助手，帮你快速分析 Kubernetes 集群问题</p>
+              <div style={styles.welcomeInputWrapper}>
+                <input
+                  style={styles.welcomeInput}
+                  value={question}
+                  onChange={(e) => setQuestion(e.target.value)}
+                  onCompositionStart={() => { isComposingRef.current = true; }}
+                  onCompositionEnd={() => { isComposingRef.current = false; }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      if (!isComposingRef.current) submitFromWelcome();
+                    }
+                  }}
+                  placeholder="输入你的问题，开始诊断..."
+                />
+                <button
+                  style={{
+                    ...styles.welcomeSendBtn,
+                    opacity: question.trim() ? 1 : 0.4,
+                    cursor: question.trim() ? 'pointer' : 'default',
+                  }}
+                  onClick={submitFromWelcome}
+                  disabled={!question.trim()}
+                >
+                  <Send size={18} />
+                </button>
+              </div>
+              <div style={styles.suggestionsGrid}>
+                {suggestedQuestions.map((item, i) => (
+                  <button
+                    key={i}
+                    style={styles.suggestionCard}
+                    onClick={() => { setQuestion(item.text); }}
+                    onMouseEnter={e => {
+                      (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--k8s-blue)';
+                      (e.currentTarget as HTMLButtonElement).style.background = 'var(--k8s-blue-light, #eff6ff)';
+                    }}
+                    onMouseLeave={e => {
+                      (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--k8s-border)';
+                      (e.currentTarget as HTMLButtonElement).style.background = 'var(--k8s-card-bg, #fff)';
+                    }}
+                  >
+                    <span style={{ fontSize: '18px' }}>{item.icon}</span>
+                    <span style={{ fontSize: '13px', color: 'var(--k8s-text-primary)' }}>{item.text}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>
@@ -484,6 +585,94 @@ const styles: { [key: string]: React.CSSProperties } = {
     height: '100%',
     color: 'var(--k8s-text-muted)',
     fontSize: '14px',
+  },
+  welcomeContainer: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: '100%',
+    width: '100%',
+  },
+  welcomeContent: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    maxWidth: '600px',
+    width: '100%',
+    padding: '0 20px',
+  },
+  welcomeIcon: {
+    width: '64px',
+    height: '64px',
+    borderRadius: '50%',
+    background: 'var(--k8s-blue-light, #eff6ff)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: '20px',
+  },
+  welcomeTitle: {
+    fontSize: '24px',
+    fontWeight: 600,
+    color: 'var(--k8s-text-primary)',
+    margin: '0 0 8px 0',
+  },
+  welcomeSubtitle: {
+    fontSize: '14px',
+    color: 'var(--k8s-text-muted)',
+    margin: '0 0 32px 0',
+  },
+  welcomeInputWrapper: {
+    display: 'flex',
+    alignItems: 'center',
+    width: '100%',
+    border: '1px solid var(--k8s-border)',
+    borderRadius: '12px',
+    padding: '4px 4px 4px 16px',
+    background: 'var(--k8s-card-bg, #fff)',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+    transition: 'border-color 0.2s, box-shadow 0.2s',
+  },
+  welcomeInput: {
+    flex: 1,
+    border: 'none',
+    outline: 'none',
+    fontSize: '14px',
+    padding: '10px 0',
+    background: 'transparent',
+    color: 'var(--k8s-text-primary)',
+  },
+  welcomeSendBtn: {
+    width: '36px',
+    height: '36px',
+    borderRadius: '8px',
+    border: 'none',
+    background: 'var(--k8s-blue)',
+    color: 'white',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+    transition: 'opacity 0.2s',
+  },
+  suggestionsGrid: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: '10px',
+    width: '100%',
+    marginTop: '28px',
+  },
+  suggestionCard: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    padding: '12px 14px',
+    border: '1px solid var(--k8s-border)',
+    borderRadius: '10px',
+    background: 'var(--k8s-card-bg, #fff)',
+    cursor: 'pointer',
+    transition: 'border-color 0.2s, background 0.2s',
+    textAlign: 'left',
   },
 };
 

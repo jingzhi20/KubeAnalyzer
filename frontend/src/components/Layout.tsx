@@ -298,7 +298,7 @@ function Layout() {
                     )}
                   </div>
                   {/* Logout icon layer */}
-                  <div className={`absolute inset-0 flex items-center justify-center rounded-[14px] bg-gradient-to-br from-red-500 to-rose-600 shadow-md shadow-red-500/25 transition-all duration-300 ease-in-out ${avatarHovered ? 'opacity-100 scale-100 rotate-0' : 'opacity-0 scale-75 -rotate-12'}`}>
+                  <div className={`absolute inset-0 flex items-center justify-center rounded-[14px] bg-gradient-to-br from-sky-400 to-sky-500 shadow-md shadow-sky-400/25 transition-all duration-300 ease-in-out ${avatarHovered ? 'opacity-100 scale-100 rotate-0' : 'opacity-0 scale-75 -rotate-12'}`}>
                     <LogOut size={18} className="text-white" />
                   </div>
                 </button>
@@ -306,7 +306,7 @@ function Layout() {
                   <div className="text-[14px] font-semibold text-gray-800 leading-tight truncate">
                     {currentUser.display_name || currentUser.username}
                   </div>
-                  <div className={`text-[12px] font-medium mt-0.5 transition-colors duration-300 ${avatarHovered ? 'text-red-400' : 'text-gray-400'}`}>
+                  <div className={`text-[12px] font-medium mt-0.5 transition-colors duration-300 ${avatarHovered ? 'text-sky-400' : 'text-gray-400'}`}>
                     {avatarHovered ? '退出登录' : (currentUser.role === 'admin' ? 'Administrator' : 'User')}
                   </div>
                 </div>
